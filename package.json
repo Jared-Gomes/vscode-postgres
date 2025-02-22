@@ -462,9 +462,9 @@
   "scripts": {
     "vscode:prepublish": "npm run build-preview && npm run compile",
     "compile": "tsc -p ./",
-    "watch": "set NODE_OPTIONS=--openssl-legacy-provider && npm run build-preview-dev && tsc -watch -p ./",
-    "build-preview-dev": "set NODE_OPTIONS=--openssl-legacy-provider && npx webpack --mode development",
-    "build-preview": "set NODE_OPTIONS=--openssl-legacy-provider && npx webpack --mode production"
+    "watch": "npm run build-preview-dev && tsc -watch -p ./",
+    "build-preview-dev": "NODE_OPTIONS=--openssl-legacy-provider npx webpack --mode development",
+    "build-preview": "NODE_OPTIONS=--openssl-legacy-provider npx webpack --mode production"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.42",
