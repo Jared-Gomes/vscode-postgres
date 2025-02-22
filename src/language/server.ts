@@ -681,11 +681,51 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
         let sqlText = template.sql;
         const parameterMap = new Map<number, string>();
 
-        // Replace parameters with placeholders
+        // Replace parameters with actual placeholders
         template.parameters.forEach((param, i) => {
-          const placeholder = `$${i + 1}`;
-          parameterMap.set(i + 1, param.value);
-          sqlText = sqlText.replace(`\${${param.value}}`, placeholder);
+          // Handle postgres.js sql() helper function
+          if (param.type === "helper" && param.value.startsWith("sql(")) {
+            // For array/object helpers, replace with a valid postgres array/record literal
+            const helperMatch = param.value.match(/sql\((.*)\)/);
+            if (helperMatch) {
+              const helperValue = helperMatch[1].trim();
+              if (helperValue.startsWith("[")) {
+                sqlText = sqlText.replace(`\${${param.value}}`, `(1)`); // Dummy array
+              } else if (helperValue.startsWith("{")) {
+                // Extract column names from the helper arguments
+                const args = helperValue
+                  .split(",")
+                  .slice(1) // Skip the first argument (the object)
+                  .map((arg) => arg.trim().replace(/['"]/g, "")); // Remove quotes
+
+                if (args.length > 0) {
+                  // Create dummy values matching the number of columns
+                  const dummyValues = args.map((col) =>
+                    typeof col === "number" ? "1" : "'dummy'"
+                  );
+
+                  // Replace with proper INSERT structure
+                  sqlText = sqlText.replace(
+                    `\${${param.value}}`,
+                    `(${args
+                      .map((a) => `"${a}"`)
+                      .join(", ")}) VALUES (${dummyValues.join(", ")})`
+                  );
+                } else {
+                  // Fallback if no columns specified
+                  sqlText = sqlText.replace(
+                    `\${${param.value}}`,
+                    `("col") VALUES ('dummy')`
+                  );
+                }
+              }
+            }
+          } else {
+            // Regular parameter
+            const placeholder = `$${i + 1}`;
+            parameterMap.set(i + 1, param.value);
+            sqlText = sqlText.replace(`\${${param.value}}`, placeholder);
+          }
         });
 
         try {
