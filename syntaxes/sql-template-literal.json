@@ -1,0 +1,49 @@
+{
+  "scopeName": "source.ts.sql",
+  "injectionSelector": "L:source.ts",
+  "patterns": [
+    {
+      "name": "string.template.sql",
+      "begin": "(sql|authSql|tx|authTx)(?:<[^>]+>)?`",
+      "beginCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.template.begin.ts"
+        },
+        "1": {
+          "name": "entity.name.function.ts"
+        }
+      },
+      "end": "`",
+      "endCaptures": {
+        "0": {
+          "name": "punctuation.definition.string.template.end.ts"
+        }
+      },
+      "patterns": [
+        {
+          "begin": "\\${",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.template-expression.begin.ts"
+            }
+          },
+          "end": "}",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.template-expression.end.ts"
+            }
+          },
+          "contentName": "meta.template.expression.ts",
+          "patterns": [
+            {
+              "include": "source.ts"
+            }
+          ]
+        },
+        {
+          "include": "source.sql"
+        }
+      ]
+    }
+  ]
+}

@@ -1,25 +1,28 @@
-import * as vscode from 'vscode';
-import { IConnection } from './IConnection';
-import PostgreSQLLanguageClient from '../language/client';
-import { Global } from './global';
-import { Constants } from './constants';
-import { Database } from './database';
+import * as vscode from "vscode";
+import { IConnection } from "./IConnection";
+import PostgreSQLLanguageClient from "../language/client";
+import { Global } from "./global";
+import { Constants } from "./constants";
+import { Database } from "./database";
 
 export class EditorState {
-
   private metadata: Map<string, IConnection> = new Map<string, IConnection>();
   private static _instance: EditorState = null;
   private statusBarDatabase: vscode.StatusBarItem;
   private statusBarServer: vscode.StatusBarItem;
 
   constructor(private readonly languageClient: PostgreSQLLanguageClient) {
-    vscode.window.onDidChangeActiveTextEditor(this.onDidChangeActiveTextEditor, this);
+    vscode.window.onDidChangeActiveTextEditor(
+      this.onDidChangeActiveTextEditor,
+      this
+    );
     vscode.workspace.onDidCloseTextDocument(this.onDidCloseTextDocument, this);
     vscode.workspace.onDidOpenTextDocument(this.onDidOpenTextDocument, this);
   }
 
   static getInstance(languageClient?: PostgreSQLLanguageClient) {
-    if (!EditorState._instance && languageClient) EditorState._instance = new EditorState(languageClient);
+    if (!EditorState._instance && languageClient)
+      EditorState._instance = new EditorState(languageClient);
     return EditorState._instance;
   }
 
@@ -44,64 +47,81 @@ export class EditorState {
     EditorState.getInstance().onDidChangeActiveTextEditor(te);
   }
 
-  public static async setNonActiveConnection(doc: vscode.TextDocument, newConn: IConnection) {
+  public static async setNonActiveConnection(
+    doc: vscode.TextDocument,
+    newConn: IConnection
+  ) {
     if (!doc || !doc.uri) return;
     if (!newConn) {
       newConn = await EditorState.getDefaultConnection();
     }
     EditorState.getInstance().metadata.set(doc.uri.toString(), newConn);
     if (vscode.window && vscode.window.activeTextEditor) {
-      EditorState.getInstance().onDidChangeActiveTextEditor(vscode.window.activeTextEditor);
+      EditorState.getInstance().onDidChangeActiveTextEditor(
+        vscode.window.activeTextEditor
+      );
     }
   }
 
   public static async getDefaultConnection(): Promise<IConnection> {
-    let defaultConnection = Global.Configuration.get<string>("defaultConnection");
+    let defaultConnection =
+      Global.Configuration.get<string>("defaultConnection");
     if (!defaultConnection) return null;
 
-    let connections = Global.context.globalState.get<{ [key: string]: IConnection }>(Constants.GlobalStateKey);
+    let connections = Global.context.globalState.get<{
+      [key: string]: IConnection;
+    }>(Constants.GlobalStateKey);
     if (!connections) connections = {};
 
     let connection: IConnection = null;
     for (const k in connections) {
       if (connections.hasOwnProperty(k)) {
-        let connFound = (k === defaultConnection);
+        let connFound = k === defaultConnection;
         if (!connFound) {
           let connName = connections[k].label || connections[k].host;
-          connFound = (connName === defaultConnection);
+          connFound = connName === defaultConnection;
         }
 
         if (connFound) {
           connection = Object.assign({}, connections[k]);
-          if (connection.hasPassword || !connection.hasOwnProperty('hasPassword')) {
+          if (
+            connection.hasPassword ||
+            !connection.hasOwnProperty("hasPassword")
+          ) {
             connection.password = await Global.context.secrets.get(k);
           }
+
+          // Ensure SSL settings are properly set
+          if (!connection.ssl) {
+            connection.ssl = true;
+          }
+
+          // For managed databases that require SSL
+          if (typeof connection.ssl === "boolean") {
+            connection.ssl = {
+              rejectUnauthorized: false,
+            };
+          }
+
           break;
         }
       }
     }
 
+    // Apply default database if specified
     let defaultDatabase = Global.Configuration.get<string>("defaultDatabase");
-    if (defaultDatabase) {
-      const conn = await Database.createConnection(connection, 'postgres');
-
-      let databases: string[] = [];
-      try {
-        const res = await conn.query('SELECT datname FROM pg_database WHERE datistemplate = false;');
-        databases = res.rows.map<string>(database => database.datname);
-      } finally {
-        await conn.end();
-      }
-
-      if (databases.indexOf(defaultDatabase)) {
-        connection = Database.getConnectionWithDB(connection, defaultDatabase);
-      }
+    if (defaultDatabase && connection) {
+      connection = Database.getConnectionWithDB(connection, defaultDatabase);
     }
+
     return connection;
   }
 
   onDidChangeActiveTextEditor(e: vscode.TextEditor) {
-    let conn: IConnection = e && e.document && e.document.uri ? this.metadata.get(e.document.uri.toString()) : null;
+    let conn: IConnection =
+      e && e.document && e.document.uri
+        ? this.metadata.get(e.document.uri.toString())
+        : null;
     this.languageClient.setConnection(conn);
     if (conn) {
       // set the status buttons
@@ -114,12 +134,14 @@ export class EditorState {
 
   setStatusButtons(conn: IConnection) {
     if (!this.statusBarServer) {
-      this.statusBarServer = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-      this.statusBarServer.tooltip = 'Change Active Server';
+      this.statusBarServer = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Left
+      );
+      this.statusBarServer.tooltip = "Change Active Server";
     }
-    
+
     this.statusBarServer.text = `$(server) ${conn.label || conn.host}`;
-    this.statusBarServer.command = 'vscode-postgres.selectConnection';
+    this.statusBarServer.command = "vscode-postgres.selectConnection";
     this.statusBarServer.show();
 
     // if (!conn.database) {
@@ -131,8 +153,10 @@ export class EditorState {
     // }
 
     if (!this.statusBarDatabase) {
-      this.statusBarDatabase = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-      this.statusBarDatabase.tooltip = 'Change Active Database';
+      this.statusBarDatabase = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Left
+      );
+      this.statusBarDatabase.tooltip = "Change Active Database";
     }
 
     if (!conn.database) {
@@ -140,7 +164,7 @@ export class EditorState {
     } else {
       this.statusBarDatabase.text = `$(database) ${conn.database}`;
     }
-    this.statusBarDatabase.command = 'vscode-postgres.selectDatabase';
+    this.statusBarDatabase.command = "vscode-postgres.selectDatabase";
     this.statusBarDatabase.show();
   }
 
@@ -148,12 +172,14 @@ export class EditorState {
     if (this.statusBarDatabase) this.statusBarDatabase.hide();
 
     if (!this.statusBarServer) {
-      this.statusBarServer = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
-      this.statusBarServer.tooltip = 'Change Active Server';
+      this.statusBarServer = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Left
+      );
+      this.statusBarServer.tooltip = "Change Active Server";
     }
-    
+
     this.statusBarServer.text = `$(server) Select Postgres Server`;
-    this.statusBarServer.command = 'vscode-postgres.selectConnection';
+    this.statusBarServer.command = "vscode-postgres.selectConnection";
     this.statusBarServer.show();
   }
 
@@ -164,5 +190,4 @@ export class EditorState {
   onDidOpenTextDocument(e: vscode.TextDocument) {
     this.metadata.set(e.uri.toString(), null);
   }
-
 }

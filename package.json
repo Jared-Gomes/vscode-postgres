@@ -31,6 +31,21 @@
           "Postgres"
         ],
         "configuration": "./language-configuration.json"
+      },
+      {
+        "id": "typescript",
+        "extensions": [
+          ".ts",
+          ".tsx"
+        ],
+        "aliases": [
+          "TypeScript",
+          "ts"
+        ],
+        "configuration": "./language-configuration.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.sql": "postgres"
+        }
       }
     ],
     "grammars": [
@@ -38,6 +53,13 @@
         "language": "postgres",
         "scopeName": "source.pgsql",
         "path": "./syntaxes/pgsql.tmLanguage"
+      },
+      {
+        "path": "./syntaxes/sql-template-literal.json",
+        "scopeName": "source.ts.sql",
+        "injectTo": [
+          "source.ts"
+        ]
       }
     ],
     "configuration": {
@@ -440,9 +462,9 @@
   "scripts": {
     "vscode:prepublish": "npm run build-preview && npm run compile",
     "compile": "tsc -p ./",
-    "watch": "npm run build-preview-dev && tsc -watch -p ./",
-    "build-preview-dev": "npx webpack --mode development",
-    "build-preview": "npx webpack --mode production"
+    "watch": "set NODE_OPTIONS=--openssl-legacy-provider && npm run build-preview-dev && tsc -watch -p ./",
+    "build-preview-dev": "set NODE_OPTIONS=--openssl-legacy-provider && npx webpack --mode development",
+    "build-preview": "set NODE_OPTIONS=--openssl-legacy-provider && npx webpack --mode production"
   },
   "devDependencies": {
     "@types/mocha": "^2.2.42",
@@ -459,6 +481,7 @@
     "csv-stringify": "^5.6.2",
     "easyxml": "^2.0.1",
     "pg": "^8.6.0",
+    "postgres": "^3.4.5",
     "postgres-array": "^3.0.2",
     "uuid": "^8.3.2",
     "vscode-languageclient": "^7.0.0",
