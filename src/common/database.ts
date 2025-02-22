@@ -59,8 +59,14 @@ export class Database {
   ): IConnection {
     if (!dbname) return connection;
     return {
-      ...connection, // Preserve all existing properties
+      label: connection.label,
+      host: connection.host,
+      user: connection.user,
+      password: connection.password,
+      port: connection.port,
       database: dbname,
+      multipleStatements: connection.multipleStatements,
+      certPath: connection.certPath,
     };
   }
 
@@ -68,22 +74,9 @@ export class Database {
     connection: IConnection,
     dbname?: string
   ): Promise<PgClient> {
-    const connectionOptions: any = {
-      ...connection,
-      database: dbname || connection.database,
-      ssl: connection.ssl || {
-        rejectUnauthorized: false,
-      },
-    };
+    const connectionOptions: any = Object.assign({}, connection);
+    connectionOptions.database = dbname ? dbname : connection.database;
 
-    // Always ensure SSL is properly configured for managed databases
-    if (typeof connectionOptions.ssl === "boolean") {
-      connectionOptions.ssl = {
-        rejectUnauthorized: false,
-      };
-    }
-
-    // If there's a certificate path, use it
     if (
       connectionOptions.certPath &&
       fs.existsSync(connectionOptions.certPath)
@@ -97,13 +90,11 @@ export class Database {
     let client = new PgClient(connectionOptions);
     await client.connect();
 
-    // Verify connection by running a simple query
-    try {
-      await client.query("SELECT 1");
-    } catch (err) {
-      await client.end();
-      throw new Error(`Connection failed: ${err.message}`);
-    }
+    const versionRes = await client.query(
+      `SELECT current_setting('server_version_num') as ver_num;`
+    );
+    let versionNumber = parseInt(versionRes.rows[0].ver_num);
+    client.pg_version = versionNumber;
 
     return client;
   }

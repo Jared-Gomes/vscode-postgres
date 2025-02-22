@@ -37,10 +37,6 @@ export default class PostgreSQLLanguageClient {
         { language: "typescript", scheme: "file" },
         { language: "typescript", scheme: "untitled" },
       ],
-      synchronize: {
-        configurationSection: "vscode-postgres",
-        fileEvents: workspace.createFileSystemWatcher("**/*.{ts,pgsql}"),
-      },
     };
 
     this.client = new LanguageClient(

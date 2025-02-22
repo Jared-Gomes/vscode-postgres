@@ -118,26 +118,17 @@ export class EditorState {
   }
 
   onDidChangeActiveTextEditor(e: vscode.TextEditor) {
-    try {
-      let conn: IConnection =
-        e && e.document && e.document.uri
-          ? this.metadata.get(e.document.uri.toString())
-          : null;
-
-      // Wait for language client to be ready
-      if (this.languageClient) {
-        this.languageClient.client.onReady().then(async () => {
-          this.languageClient.setConnection(conn);
-        });
-      }
-
-      if (conn) {
-        this.setStatusButtons(conn);
-      } else {
-        this.removeStatusButtons();
-      }
-    } catch (err) {
-      console.error("Error in editor change:", err);
+    let conn: IConnection =
+      e && e.document && e.document.uri
+        ? this.metadata.get(e.document.uri.toString())
+        : null;
+    this.languageClient.setConnection(conn);
+    if (conn) {
+      // set the status buttons
+      this.setStatusButtons(conn);
+    } else {
+      // clear the status buttons
+      this.removeStatusButtons();
     }
   }
 
