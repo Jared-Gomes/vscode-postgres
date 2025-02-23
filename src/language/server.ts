@@ -762,12 +762,66 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
             });
           }
         } catch (err) {
-          diagnostics.push({
-            severity: DiagnosticSeverity.Error,
-            range: template.range,
-            message: err.message,
-            source: dbConnOptions.host,
-          });
+          if (err.position) {
+            let errPosition = parseInt(err.position) - 8; // remove "EXPLAIN "
+            let errLine = 0;
+            const sqlLines = sqlText.split('\n');
+
+            // Find the line containing the error
+            while (errPosition > sqlLines[errLine].length) {
+              errPosition -= sqlLines[errLine].length + 1; // +1 for newline
+              errLine++;
+            }
+
+            // Find word boundaries around error position
+            let lineText = sqlLines[errLine];
+            let wordStart = errPosition;
+            let wordEnd = errPosition;
+
+            // Look backwards for word start
+            while (wordStart > 0 && /[^\s,().]/.test(lineText[wordStart - 1])) {
+              wordStart--;
+            }
+
+            // Look forwards for word end
+            while (
+              wordEnd < lineText.length &&
+              /[^\s,().]/.test(lineText[wordEnd])
+            ) {
+              wordEnd++;
+            }
+
+            // Calculate position relative to template start
+            const startLine = template.range.start.line + errLine;
+            const startChar =
+              errLine === 0
+                ? template.range.start.character + wordStart
+                : wordStart;
+
+            const endLine = startLine;
+            const endChar =
+              errLine === 0
+                ? template.range.start.character + wordEnd
+                : wordEnd;
+
+            diagnostics.push({
+              severity: DiagnosticSeverity.Error,
+              range: {
+                start: { line: startLine, character: startChar },
+                end: { line: endLine, character: endChar },
+              },
+              message: err.message,
+              source: dbConnOptions.host,
+            });
+          } else {
+            // Fallback to highlighting whole template if position not available
+            diagnostics.push({
+              severity: DiagnosticSeverity.Error,
+              range: template.range,
+              message: err.message,
+              source: dbConnOptions.host,
+            });
+          }
         }
       }
     } else if (textDocument.languageId === 'postgres') {
