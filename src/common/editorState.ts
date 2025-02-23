@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
 import { IConnection } from './IConnection';
 import PostgreSQLLanguageClient from '../language/client';
 import { Global } from './global';
@@ -90,29 +91,14 @@ export class EditorState {
           ) {
             connection.password = await Global.context.secrets.get(k);
           }
-
-          // Ensure SSL settings are properly set
-          if (!connection.ssl) {
-            connection.ssl = true;
-          }
-
-          // For managed databases that require SSL
-          if (typeof connection.ssl === 'boolean') {
-            connection.ssl = {
-              rejectUnauthorized: false,
-            };
-          }
-
           break;
         }
       }
     }
 
-    // Apply default database if specified
     let defaultDatabase = Global.Configuration.get<string>('defaultDatabase');
-    if (defaultDatabase && connection) {
-      connection = Database.getConnectionWithDB(connection, defaultDatabase);
-    }
+
+    connection = Database.getConnectionWithDB(connection, defaultDatabase);
 
     return connection;
   }
