@@ -1,13 +1,12 @@
 import * as path from 'path';
-import { INode } from "./INode";
-import { IConnection } from "../common/IConnection";
-import { TreeItem, TreeItemCollapsibleState } from "vscode";
+import { INode } from './INode';
+import { IConnection } from '../common/IConnection';
+import { TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { Database } from '../common/database';
 import { InfoNode } from './infoNode';
 import { SchemaNode } from './schemaNode';
 
 export class DatabaseNode implements INode {
-
   constructor(private readonly connection: IConnection) {}
 
   public getTreeItem(): TreeItem {
@@ -18,13 +17,13 @@ export class DatabaseNode implements INode {
       command: {
         title: 'select-database',
         command: 'vscode-postgres.setActiveConnection',
-        arguments: [ this.connection ]
+        arguments: [this.connection],
       },
       iconPath: {
         light: path.join(__dirname, '../../resources/light/database.svg'),
-        dark: path.join(__dirname, '../../resources/dark/database.svg')
-      }
-    }
+        dark: path.join(__dirname, '../../resources/dark/database.svg'),
+      },
+    };
   }
 
   public async getChildren(): Promise<INode[]> {
@@ -41,10 +40,10 @@ export class DatabaseNode implements INode {
         AND has_schema_privilege(oid, 'CREATE, USAGE')
       ORDER BY nspname;`);
 
-      return res.rows.map<SchemaNode>(schema => {
+      return res.rows.map<SchemaNode>((schema) => {
         return new SchemaNode(this.connection, schema.name);
-      })
-    } catch(err) {
+      });
+    } catch (err) {
       return [new InfoNode(err)];
     } finally {
       await connection.end();

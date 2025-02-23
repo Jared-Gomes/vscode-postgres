@@ -17,12 +17,17 @@ export class ResultView {
   private readonly disposables: vscode.Disposable[] = [];
 
   private readonly _onDisposeEmitter = new vscode.EventEmitter<void>();
-	public readonly onDispose = this._onDisposeEmitter.event;
+  public readonly onDispose = this._onDisposeEmitter.event;
 
-	private readonly _onDidChangeViewStateEmitter = new vscode.EventEmitter<vscode.WebviewPanelOnDidChangeViewStateEvent>();
-	public readonly onDidChangeViewState = this._onDidChangeViewStateEmitter.event;
+  private readonly _onDidChangeViewStateEmitter =
+    new vscode.EventEmitter<vscode.WebviewPanelOnDidChangeViewStateEvent>();
+  public readonly onDidChangeViewState =
+    this._onDidChangeViewStateEmitter.event;
 
-  public static async revive(webview: vscode.WebviewPanel, state: any): Promise<ResultView> {
+  public static async revive(
+    webview: vscode.WebviewPanel,
+    state: any,
+  ): Promise<ResultView> {
     const resource = vscode.Uri.parse(state?.resource);
 
     const view = new ResultView(webview, resource);
@@ -31,7 +36,7 @@ export class ResultView {
     view._results.push({
       command: 'ext-message',
       message: 'Please rerun your queries',
-      rowCount: 0
+      rowCount: 0,
     });
     await view.doUpdate();
     return view;
@@ -44,9 +49,10 @@ export class ResultView {
       viewColumn,
       {
         enableFindWidget: true,
-        ...ResultView.getWebviewOptions(resource)
-      });
-    
+        ...ResultView.getWebviewOptions(resource),
+      },
+    );
+
     return new ResultView(view, resource);
   }
 
@@ -55,7 +61,11 @@ export class ResultView {
     this.editor = webview;
 
     this.editor.onDidDispose(() => this.dispose(), null, this.disposables);
-    this.editor.onDidChangeViewState(e => this._onDidChangeViewStateEmitter.fire(e), null, this.disposables);
+    this.editor.onDidChangeViewState(
+      (e) => this._onDidChangeViewStateEmitter.fire(e),
+      null,
+      this.disposables,
+    );
   }
 
   public get resource(): vscode.Uri {
@@ -64,7 +74,7 @@ export class ResultView {
 
   public get state() {
     return {
-      resource: this.resource.toString()
+      resource: this.resource.toString(),
     };
   }
 
@@ -131,20 +141,25 @@ export class ResultView {
     this.forceUpdate = false;
 
     // build HTML for results
-    let html = generateResultsHtml(this.editor.webview, resource, results, this.state);
+    let html = generateResultsHtml(
+      this.editor.webview,
+      resource,
+      results,
+      this.state,
+    );
     this.editor.title = ResultView.getViewTitle(resource);
     this.editor.webview.options = ResultView.getWebviewOptions(resource);
     this.editor.webview.html = html;
   }
 
-  private static getWebviewOptions(resource: vscode.Uri): vscode.WebviewOptions {
+  private static getWebviewOptions(
+    resource: vscode.Uri,
+  ): vscode.WebviewOptions {
     let localRoot = vscode.Uri.file(Global.context.asAbsolutePath('media'));
     return {
       enableScripts: true,
       enableCommandUris: true,
-      localResourceRoots: [
-        localRoot
-      ]
+      localResourceRoots: [localRoot],
     };
   }
 }

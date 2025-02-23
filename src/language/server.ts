@@ -14,14 +14,14 @@ import {
   SignatureInformation,
   ParameterInformation,
   TextDocumentSyncKind,
-} from "vscode-languageserver/node";
-import { PgClient } from "../common/connection";
-import * as fs from "fs";
-import { Validator } from "./validator";
-import { IConnection as IDBConnection } from "../common/IConnection";
-import { BackwardIterator } from "../common/backwordIterator";
-import { SqlQueryManager } from "../queries";
-import { TextDocument } from "vscode-languageserver-textdocument";
+} from 'vscode-languageserver/node';
+import { PgClient } from '../common/connection';
+import * as fs from 'fs';
+import { Validator } from './validator';
+import { IConnection as IDBConnection } from '../common/IConnection';
+import { BackwardIterator } from '../common/backwordIterator';
+import { SqlQueryManager } from '../queries';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 
 export interface ISetConnection {
   connection: IDBConnection;
@@ -84,7 +84,7 @@ export interface Ident {
 export interface SQLTemplate {
   sql: string;
   parameters: {
-    type: "value" | "helper" | "identifier" | "fragment";
+    type: 'value' | 'helper' | 'identifier' | 'fragment';
     value: string;
     position: number;
   }[];
@@ -107,32 +107,32 @@ interface TypeMapping {
 
 const typeCompatibility: TypeMapping[] = [
   {
-    tsType: "number",
+    tsType: 'number',
     pgTypes: [
-      "integer",
-      "bigint",
-      "numeric",
-      "smallint",
-      "decimal",
-      "real",
-      "double precision",
+      'integer',
+      'bigint',
+      'numeric',
+      'smallint',
+      'decimal',
+      'real',
+      'double precision',
     ],
   },
   {
-    tsType: "string",
-    pgTypes: ["text", "varchar", "char", "character varying", "name", "uuid"],
+    tsType: 'string',
+    pgTypes: ['text', 'varchar', 'char', 'character varying', 'name', 'uuid'],
   },
   {
-    tsType: "boolean",
-    pgTypes: ["boolean"],
+    tsType: 'boolean',
+    pgTypes: ['boolean'],
   },
   {
-    tsType: "Date",
-    pgTypes: ["timestamp", "timestamptz", "date", "time"],
+    tsType: 'Date',
+    pgTypes: ['timestamp', 'timestamptz', 'date', 'time'],
   },
   {
-    tsType: "any",
-    pgTypes: ["json", "jsonb"],
+    tsType: 'any',
+    pgTypes: ['json', 'jsonb'],
   },
 ];
 
@@ -152,7 +152,7 @@ let databaseCache: string[] = [];
 
 let connection: Connection = createConnection(
   new IPCMessageReader(process),
-  new IPCMessageWriter(process)
+  new IPCMessageWriter(process),
 );
 let dbConnection: PgClient = null,
   dbConnOptions: IDBConnection = null;
@@ -161,7 +161,7 @@ console.log = connection.console.log.bind(connection.console);
 console.error = connection.console.error.bind(connection.console);
 
 let documents: TextDocuments<TextDocument> = new TextDocuments<TextDocument>(
-  TextDocument
+  TextDocument,
 );
 
 documents.listen(connection);
@@ -178,10 +178,10 @@ connection.onInitialize((_params): InitializeResult => {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Full,
       completionProvider: {
-        triggerCharacters: [" ", ".", '"'],
+        triggerCharacters: [' ', '.', '"'],
       },
       signatureHelpProvider: {
-        triggerCharacters: ["(", ","],
+        triggerCharacters: ['(', ','],
       },
     },
   };
@@ -203,7 +203,7 @@ function dbConnectionEnded() {
 
 async function setupDBConnection(
   connectionOptions: IDBConnection,
-  uri: string
+  uri: string,
 ): Promise<void> {
   if (connectionOptions) {
     // dbConnection = await Database.createConnection(conn);
@@ -224,7 +224,7 @@ async function setupDBConnection(
         user: connectionOptions.user,
         password: connectionOptions.password,
         port: connectionOptions.port,
-        database: "postgres",
+        database: 'postgres',
         multipleStatements: connectionOptions.multipleStatements,
         certPath: connectionOptions.certPath,
         ssl: connectionOptions.ssl,
@@ -238,11 +238,11 @@ async function setupDBConnection(
     dbConnection = new PgClient(connectionOptions);
     await dbConnection.connect();
     const versionRes = await dbConnection.query(
-      `SELECT current_setting('server_version_num') as ver_num;`
+      `SELECT current_setting('server_version_num') as ver_num;`,
     );
     let versionNumber = parseInt(versionRes.rows[0].ver_num);
     dbConnection.pg_version = versionNumber;
-    dbConnection.on("end", dbConnectionEnded);
+    dbConnection.on('end', dbConnectionEnded);
 
     loadCompletionCache(connectionOptions);
 
@@ -250,8 +250,8 @@ async function setupDBConnection(
       let document = documents.get(uri);
       if (
         document &&
-        (document.languageId === "postgres" ||
-          document.languageId === "typescript")
+        (document.languageId === 'postgres' ||
+          document.languageId === 'typescript')
       ) {
         validateTextDocument(document);
       }
@@ -371,7 +371,7 @@ async function loadCompletionCache(connectionOptions: IDBConnection) {
         functionCache.push(existing);
       }
       let args = fn.argument_types
-        .split(",")
+        .split(',')
         .filter((a) => a)
         .map<string>((a) => a.trim());
       existing.overloads.push({ args, description: fn.description });
@@ -383,7 +383,7 @@ async function loadCompletionCache(connectionOptions: IDBConnection) {
   try {
     let keywords = await dbConnection.query(`select * from pg_get_keywords();`);
     keywordCache = keywords.rows.map<string>((rw) =>
-      rw.word.toLocaleUpperCase()
+      rw.word.toLocaleUpperCase(),
     );
   } catch (err) {
     console.log(err.message);
@@ -403,7 +403,7 @@ async function loadCompletionCache(connectionOptions: IDBConnection) {
   }
 }
 
-connection.onRequest("set_connection", async function () {
+connection.onRequest('set_connection', async function () {
   let newConnection: ISetConnection = arguments[0];
   if (!dbConnOptions && !newConnection.connection) {
     // neither has a connection - just exist
@@ -428,7 +428,7 @@ connection.onRequest("set_connection", async function () {
   setupDBConnection(newConnection.connection, newConnection.documentUri).catch(
     (err) => {
       console.log(err.message);
-    }
+    },
   );
 });
 
@@ -458,16 +458,16 @@ function extractSQLTemplates(text: string): SQLTemplate[] {
 
     // Calculate correct line and character positions
     const beforeTemplate = text.substring(0, match.index);
-    const lines = beforeTemplate.split("\n");
+    const lines = beforeTemplate.split('\n');
     const startLine = lines.length - 1;
     const startCharacter = lines[lines.length - 1].length;
 
     // Calculate end position
     const templateContent = text.substring(
       match.index,
-      match.index + full.length
+      match.index + full.length,
     );
-    const templateLines = templateContent.split("\n");
+    const templateLines = templateContent.split('\n');
     const endLine = startLine + templateLines.length - 1;
     const endCharacter =
       templateLines.length === 1
@@ -475,7 +475,7 @@ function extractSQLTemplates(text: string): SQLTemplate[] {
         : templateLines[templateLines.length - 1].length;
 
     // Parse parameters ${...} within the template, preserving line information
-    const parameters: SQLTemplate["parameters"] = [];
+    const parameters: SQLTemplate['parameters'] = [];
     const paramRegex = /\${([^}]*)}/g;
 
     let paramMatch;
@@ -488,7 +488,7 @@ function extractSQLTemplates(text: string): SQLTemplate[] {
 
       // Calculate parameter position considering line breaks
       const precedingText = query.substring(lastIndex, paramMatch.index);
-      const precedingLines = precedingText.split("\n");
+      const precedingLines = precedingText.split('\n');
       currentLine += precedingLines.length - 1;
 
       if (precedingLines.length > 1) {
@@ -498,16 +498,16 @@ function extractSQLTemplates(text: string): SQLTemplate[] {
       }
 
       // Determine parameter type
-      let type: SQLTemplate["parameters"][0]["type"] = "value";
+      let type: SQLTemplate['parameters'][0]['type'] = 'value';
 
-      if (param.startsWith("sql(")) {
-        if (param.includes("[]") || param.includes("{}")) {
-          type = "helper";
+      if (param.startsWith('sql(')) {
+        if (param.includes('[]') || param.includes('{}')) {
+          type = 'helper';
         } else {
-          type = "identifier";
+          type = 'identifier';
         }
-      } else if (param.startsWith("sql`")) {
-        type = "fragment";
+      } else if (param.startsWith('sql`')) {
+        type = 'fragment';
       }
 
       parameters.push({
@@ -536,10 +536,10 @@ function extractSQLTemplates(text: string): SQLTemplate[] {
 function validateParameterType(
   paramValue: string,
   columnType: string,
-  variableType?: string
+  variableType?: string,
 ): string | null {
   // For sql() helpers and fragments, no type checking needed
-  if (paramValue.startsWith("sql(") || paramValue.startsWith("sql`")) {
+  if (paramValue.startsWith('sql(') || paramValue.startsWith('sql`')) {
     return null;
   }
 
@@ -547,11 +547,11 @@ function validateParameterType(
   if (!variableType) {
     // Check for common type patterns
     if (paramValue.match(/^[0-9]+$/)) {
-      variableType = "number";
+      variableType = 'number';
     } else if (paramValue.match(/^['"].*['"]$/)) {
-      variableType = "string";
-    } else if (paramValue === "true" || paramValue === "false") {
-      variableType = "boolean";
+      variableType = 'string';
+    } else if (paramValue === 'true' || paramValue === 'false') {
+      variableType = 'boolean';
     }
   }
 
@@ -580,10 +580,10 @@ function inferParameterTypes(sqlText: string): string[] {
   const statementType = sqlText.trim().split(/\s+/)[0].toUpperCase();
 
   switch (statementType) {
-    case "SELECT":
+    case 'SELECT':
       // For WHERE clauses in SELECT statements
       const whereMatch = sqlText.match(
-        /WHERE\s+([\s\S]*?)(?:ORDER BY|GROUP BY|LIMIT|$)/i
+        /WHERE\s+([\s\S]*?)(?:ORDER BY|GROUP BY|LIMIT|$)/i,
       );
       if (whereMatch) {
         const whereClause = whereMatch[1];
@@ -592,14 +592,14 @@ function inferParameterTypes(sqlText: string): string[] {
         for (const condition of conditions) {
           // Match patterns like "column_name = $1" or "column_name > $2"
           const condMatch = condition.match(
-            /([a-zA-Z_][a-zA-Z0-9_]*)\s*[=<>!]+\s*\$\d+/
+            /([a-zA-Z_][a-zA-Z0-9_]*)\s*[=<>!]+\s*\$\d+/,
           );
           if (condMatch) {
             const columnName = condMatch[1];
             // Find column type from tableCache
             for (const table of tableCache) {
               const column = table.columns.find(
-                (c) => c.attname === columnName
+                (c) => c.attname === columnName,
               );
               if (column) {
                 parameterTypes.push(column.data_type);
@@ -611,23 +611,23 @@ function inferParameterTypes(sqlText: string): string[] {
       }
       break;
 
-    case "INSERT":
+    case 'INSERT':
       // For INSERT statements, check the column list
       const insertMatch = sqlText.match(
-        /INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*VALUES\s*\((.*?)\)/i
+        /INSERT\s+INTO\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*?)\)\s*VALUES\s*\((.*?)\)/i,
       );
       if (insertMatch) {
         const [_, tableName, columnList, valuesList] = insertMatch;
-        const columns = columnList.split(",").map((c) => c.trim());
-        const values = valuesList.split(",").map((v) => v.trim());
+        const columns = columnList.split(',').map((c) => c.trim());
+        const values = valuesList.split(',').map((v) => v.trim());
 
         const table = tableCache.find((t) => t.tablename === tableName);
         if (table) {
           values.forEach((value) => {
-            if (value.startsWith("$")) {
+            if (value.startsWith('$')) {
               const columnIndex = values.indexOf(value);
               const column = table.columns.find(
-                (c) => c.attname === columns[columnIndex]
+                (c) => c.attname === columns[columnIndex],
               );
               if (column) {
                 parameterTypes.push(column.data_type);
@@ -638,22 +638,22 @@ function inferParameterTypes(sqlText: string): string[] {
       }
       break;
 
-    case "UPDATE":
+    case 'UPDATE':
       // For UPDATE statements
       const updateMatch = sqlText.match(
-        /UPDATE\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+SET\s+(.*?)(?:WHERE|$)/i
+        /UPDATE\s+([a-zA-Z_][a-zA-Z0-9_]*)\s+SET\s+(.*?)(?:WHERE|$)/i,
       );
       if (updateMatch) {
         const [_, tableName, setClause] = updateMatch;
         const table = tableCache.find((t) => t.tablename === tableName);
 
         if (table) {
-          const assignments = setClause.split(",");
+          const assignments = setClause.split(',');
           assignments.forEach((assignment) => {
-            const [column, value] = assignment.split("=").map((s) => s.trim());
-            if (value.startsWith("$")) {
+            const [column, value] = assignment.split('=').map((s) => s.trim());
+            if (value.startsWith('$')) {
               const tableColumn = table.columns.find(
-                (c) => c.attname === column
+                (c) => c.attname === column,
               );
               if (tableColumn) {
                 parameterTypes.push(tableColumn.data_type);
@@ -668,12 +668,12 @@ function inferParameterTypes(sqlText: string): string[] {
   return parameterTypes;
 }
 
-var _NL = "\n".charCodeAt(0);
+var _NL = '\n'.charCodeAt(0);
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
   let diagnostics: Diagnostic[] = [];
   // parse and find issues
   if (dbConnection) {
-    if (textDocument.languageId === "typescript") {
+    if (textDocument.languageId === 'typescript') {
       const text = textDocument.getText();
       const templates = extractSQLTemplates(text);
 
@@ -684,24 +684,24 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
         // Replace parameters with actual placeholders
         template.parameters.forEach((param, i) => {
           // Handle postgres.js sql() helper function
-          if (param.type === "helper" && param.value.startsWith("sql(")) {
+          if (param.type === 'helper' && param.value.startsWith('sql(')) {
             // For array/object helpers, replace with a valid postgres array/record literal
             const helperMatch = param.value.match(/sql\((.*)\)/);
             if (helperMatch) {
               const helperValue = helperMatch[1].trim();
-              if (helperValue.startsWith("[")) {
+              if (helperValue.startsWith('[')) {
                 sqlText = sqlText.replace(`\${${param.value}}`, `(1)`); // Dummy array
-              } else if (helperValue.startsWith("{")) {
+              } else if (helperValue.startsWith('{')) {
                 // Extract column names from the helper arguments
                 const args = helperValue
-                  .split(",")
+                  .split(',')
                   .slice(1) // Skip the first argument (the object)
-                  .map((arg) => arg.trim().replace(/['"]/g, "")); // Remove quotes
+                  .map((arg) => arg.trim().replace(/['"]/g, '')); // Remove quotes
 
                 if (args.length > 0) {
                   // Create dummy values matching the number of columns
                   const dummyValues = args.map((col) =>
-                    typeof col === "number" ? "1" : "'dummy'"
+                    typeof col === 'number' ? '1' : "'dummy'",
                   );
 
                   // Replace with proper INSERT structure
@@ -709,13 +709,13 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
                     `\${${param.value}}`,
                     `(${args
                       .map((a) => `"${a}"`)
-                      .join(", ")}) VALUES (${dummyValues.join(", ")})`
+                      .join(', ')}) VALUES (${dummyValues.join(', ')})`,
                   );
                 } else {
                   // Fallback if no columns specified
                   sqlText = sqlText.replace(
                     `\${${param.value}}`,
-                    `("col") VALUES ('dummy')`
+                    `("col") VALUES ('dummy')`,
                   );
                 }
               }
@@ -736,10 +736,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
           if (template.parameters.length > 0) {
             const inferredTypes = inferParameterTypes(sqlText);
             template.parameters.forEach((param, i) => {
-              if (param.type === "value" && inferredTypes[i]) {
+              if (param.type === 'value' && inferredTypes[i]) {
                 const error = validateParameterType(
                   param.value,
-                  inferredTypes[i]
+                  inferredTypes[i],
                 );
                 if (error) {
                   diagnostics.push({
@@ -755,7 +755,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
                       },
                     },
                     message: error,
-                    source: "type-check",
+                    source: 'type-check',
                   });
                 }
               }
@@ -770,7 +770,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
           });
         }
       }
-    } else if (textDocument.languageId === "postgres") {
+    } else if (textDocument.languageId === 'postgres') {
       let sqlText = textDocument.getText();
       if (!sqlText) {
         connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
@@ -779,7 +779,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
       for (let sql of Validator.prepare_sql(sqlText)) {
         if (!sql.statement) continue;
         let errColumnMod = 0;
-        if (sql.statement.trim().toUpperCase().startsWith("EXPLAIN ")) {
+        if (sql.statement.trim().toUpperCase().startsWith('EXPLAIN ')) {
           let match = sql.statement.match(/\s*?EXPLAIN\s/gi);
           if (match) {
             for (let i = 0; i < match[0].length; i++) {
@@ -790,7 +790,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
                 sql.line++;
               }
             }
-            sql.statement = sql.statement.replace(/\s*?EXPLAIN\s/gi, "");
+            sql.statement = sql.statement.replace(/\s*?EXPLAIN\s/gi, '');
           }
         }
         try {
@@ -809,7 +809,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
           // find next space after position
           let spacePos = errPosition;
           if (errPosition < sql.lines[errLine].length) {
-            spacePos = sql.lines[errLine].indexOf(" ", errPosition);
+            spacePos = sql.lines[errLine].indexOf(' ', errPosition);
             if (spacePos < 0) {
               spacePos = sql.lines[errLine].length;
             }
@@ -851,14 +851,14 @@ connection.onCompletion((e: any): CompletionItem[] => {
   if (!document) return items;
 
   // For TypeScript files, check if we're inside a SQL template
-  if (document.languageId === "typescript") {
+  if (document.languageId === 'typescript') {
     const templates = extractSQLTemplates(document.getText());
     const position = document.offsetAt(e.position);
 
     const activeTemplate = templates.find(
       (t) =>
         position >= document.offsetAt(t.range.start) &&
-        position <= document.offsetAt(t.range.end)
+        position <= document.offsetAt(t.range.end),
     );
 
     if (!activeTemplate) return [];
@@ -876,7 +876,7 @@ connection.onCompletion((e: any): CompletionItem[] => {
   let iterator = new BackwardIterator(
     document,
     e.position.character - 1,
-    e.position.line
+    e.position.line,
   );
 
   // // look back and grab the text immediately prior to match to table
@@ -929,7 +929,7 @@ connection.onCompletion((e: any): CompletionItem[] => {
     return items;
   }
 
-  if (e.context.triggerCharacter === ".") {
+  if (e.context.triggerCharacter === '.') {
     let idents = readIdents(iterator, 3);
     let pos = 0;
 
@@ -943,7 +943,7 @@ connection.onCompletion((e: any): CompletionItem[] => {
 
     if (!schema) {
       schema = schemaCache.find((sch) => {
-        return sch.name == "public";
+        return sch.name == 'public';
       });
     } else {
       pos++;
@@ -957,7 +957,7 @@ connection.onCompletion((e: any): CompletionItem[] => {
         items.push({
           label: tbl.tablename,
           kind: CompletionItemKind.Class,
-          detail: tbl.schemaname !== "public" ? tbl.schemaname : null,
+          detail: tbl.schemaname !== 'public' ? tbl.schemaname : null,
         });
       });
       return items;
@@ -996,26 +996,26 @@ connection.onCompletion((e: any): CompletionItem[] => {
     tableCache.forEach((table) => {
       items.push({
         label: table.tablename,
-        detail: table.schemaname !== "public" ? table.schemaname : null,
+        detail: table.schemaname !== 'public' ? table.schemaname : null,
         kind: table.is_table
           ? CompletionItemKind.Class
           : CompletionItemKind.Interface,
         insertText:
-          table.schemaname == "public"
+          table.schemaname == 'public'
             ? table.tablename
-            : table.schemaname + "." + table.tablename,
+            : table.schemaname + '.' + table.tablename,
       });
       table.columns.forEach((field) => {
         let foundItem = items.find(
           (i) =>
             i.label === field.attname &&
             i.kind === CompletionItemKind.Field &&
-            i.detail === field.data_type
+            i.detail === field.data_type,
         );
         if (foundItem) {
           foundItem.tables.push(table.tablename);
           foundItem.tables.sort();
-          foundItem.documentation = foundItem.tables.join(", ");
+          foundItem.documentation = foundItem.tables.join(', ');
         } else {
           items.push({
             label: field.attname,
@@ -1053,7 +1053,7 @@ connection.onCompletion((e: any): CompletionItem[] => {
 
 function getCompletionItems(
   position: { line: number; character: number },
-  template?: SQLTemplate
+  template?: SQLTemplate,
 ): FieldCompletionItem[] {
   let items: FieldCompletionItem[] = [];
 
@@ -1083,14 +1083,14 @@ function getCompletionItems(
   tableCache.forEach((table) => {
     items.push({
       label: table.tablename,
-      detail: table.schemaname !== "public" ? table.schemaname : null,
+      detail: table.schemaname !== 'public' ? table.schemaname : null,
       kind: table.is_table
         ? CompletionItemKind.Class
         : CompletionItemKind.Interface,
       insertText:
-        table.schemaname == "public"
+        table.schemaname == 'public'
           ? table.tablename
-          : table.schemaname + "." + table.tablename,
+          : table.schemaname + '.' + table.tablename,
     });
 
     // Add column completions
@@ -1099,13 +1099,13 @@ function getCompletionItems(
         (i) =>
           i.label === field.attname &&
           i.kind === CompletionItemKind.Field &&
-          i.detail === field.data_type
+          i.detail === field.data_type,
       );
 
       if (foundItem) {
         foundItem.tables.push(table.tablename);
         foundItem.tables.sort();
-        foundItem.documentation = foundItem.tables.join(", ");
+        foundItem.documentation = foundItem.tables.join(', ');
       } else {
         items.push({
           label: field.attname,
@@ -1147,25 +1147,25 @@ function getCompletionItems(
   // If we're in a template literal, add special completions for parameters
   if (template) {
     items.push({
-      label: "sql",
+      label: 'sql',
       kind: CompletionItemKind.Function,
-      detail: "SQL Helper Function",
-      documentation: "Helper function for SQL identifiers and fragments",
+      detail: 'SQL Helper Function',
+      documentation: 'Helper function for SQL identifiers and fragments',
     });
 
     // Add helper completions for arrays and objects
     items.push({
-      label: "sql([...])",
+      label: 'sql([...])',
       kind: CompletionItemKind.Snippet,
-      detail: "SQL Array Helper",
-      documentation: "Helper for SQL array parameters",
+      detail: 'SQL Array Helper',
+      documentation: 'Helper for SQL array parameters',
     });
 
     items.push({
-      label: "sql({...})",
+      label: 'sql({...})',
       kind: CompletionItemKind.Snippet,
-      detail: "SQL Object Helper",
-      documentation: "Helper for SQL object parameters",
+      detail: 'SQL Object Helper',
+      documentation: 'Helper for SQL object parameters',
     });
   }
 
@@ -1187,7 +1187,7 @@ connection.onSignatureHelp((positionParams): SignatureHelp => {
     let iterator = new BackwardIterator(
       document,
       positionParams.position.character - 1,
-      positionParams.position.line
+      positionParams.position.line,
     );
 
     let paramCount = iterator.readArguments();
@@ -1197,7 +1197,7 @@ connection.onSignatureHelp((positionParams): SignatureHelp => {
     if (!ident || ident.match(/^\".*?\"$/)) return null;
 
     let fn = functionCache.find(
-      (f) => f.name.toLocaleLowerCase() === ident.toLocaleLowerCase()
+      (f) => f.name.toLocaleLowerCase() === ident.toLocaleLowerCase(),
     );
     if (!fn) return null;
 
@@ -1206,7 +1206,7 @@ connection.onSignatureHelp((positionParams): SignatureHelp => {
 
     overloads.forEach((overload) => {
       signatures.push({
-        label: `${fn.name}( ${overload.args.join(" , ")} )`,
+        label: `${fn.name}( ${overload.args.join(' , ')} )`,
         documentation: overload.description,
         parameters: overload.args.map<ParameterInformation>((v) => {
           return { label: v };
@@ -1221,7 +1221,7 @@ connection.onSignatureHelp((positionParams): SignatureHelp => {
 });
 
 function fixQuotedIdent(str: string): string {
-  return str.replace(/^\"/, "").replace(/\"$/, "").replace(/\"\"/, '"');
+  return str.replace(/^\"/, '').replace(/\"$/, '').replace(/\"\"/, '"');
 }
 
 function readIdents(iterator: BackwardIterator, maxlvl: number): Ident[] {
@@ -1241,14 +1241,14 @@ function inferQueryReturnType(sqlText: string): ColumnInfo[] {
   if (!selectMatch) return null;
 
   const columns: ColumnInfo[] = [];
-  const columnList = selectMatch[1].split(",");
+  const columnList = selectMatch[1].split(',');
 
   for (const col of columnList) {
     const colParts = col.trim().split(/\s+AS\s+/i);
-    const colName = colParts[colParts.length - 1].trim().replace(/["`]/g, "");
+    const colName = colParts[colParts.length - 1].trim().replace(/["`]/g, '');
 
     // Find matching table column type
-    let colType = "any";
+    let colType = 'any';
 
     // Check if column is from tableCache
     for (const table of tableCache) {
@@ -1270,7 +1270,7 @@ function inferQueryReturnType(sqlText: string): ColumnInfo[] {
 
 function validateReturnType(
   inferredColumns: ColumnInfo[],
-  returnType: string
+  returnType: string,
 ): string[] {
   const errors: string[] = [];
 
@@ -1281,8 +1281,8 @@ function validateReturnType(
     return errors;
   }
 
-  const expectedColumns = typeMatch[1].split(",").map((col) => {
-    const [name, type] = col.split(":").map((s) => s.trim());
+  const expectedColumns = typeMatch[1].split(',').map((col) => {
+    const [name, type] = col.split(':').map((s) => s.trim());
     return { name, type };
   });
 
@@ -1297,23 +1297,23 @@ function validateReturnType(
 
     // Map PostgreSQL types to TypeScript types
     const pgToTs = {
-      integer: "number",
-      bigint: "number",
-      numeric: "number",
-      text: "string",
-      varchar: "string",
-      boolean: "boolean",
-      timestamp: "Date",
-      json: "any",
-      jsonb: "any",
+      integer: 'number',
+      bigint: 'number',
+      numeric: 'number',
+      text: 'string',
+      varchar: 'string',
+      boolean: 'boolean',
+      timestamp: 'Date',
+      json: 'any',
+      jsonb: 'any',
     };
 
     const expectedTsType = expected.type;
-    const inferredTsType = pgToTs[inferred.type] || "any";
+    const inferredTsType = pgToTs[inferred.type] || 'any';
 
-    if (expectedTsType !== inferredTsType && expectedTsType !== "any") {
+    if (expectedTsType !== inferredTsType && expectedTsType !== 'any') {
       errors.push(
-        `Type mismatch for ${expected.name}: expected ${expectedTsType}, got ${inferredTsType}`
+        `Type mismatch for ${expected.name}: expected ${expectedTsType}, got ${inferredTsType}`,
       );
     }
   }

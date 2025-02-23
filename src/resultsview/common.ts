@@ -12,7 +12,12 @@ export function disposeAll(disposables: vscode.Disposable[]) {
   }
 }
 
-export function generateResultsHtml(webview: vscode.Webview, sourceUri: vscode.Uri, results: QueryResults[], state?: any) {
+export function generateResultsHtml(
+  webview: vscode.Webview,
+  sourceUri: vscode.Uri,
+  results: QueryResults[],
+  state?: any,
+) {
   let pageScript = getExtensionResourcePath('index.js', webview);
   const nonce = new Date().getTime() + '' + new Date().getMilliseconds();
 
@@ -129,7 +134,10 @@ function getStyles(nonce) {
     }
   </style>`;
 }
-function getExtensionResourcePath(mediaFile: string, webview: vscode.Webview): string {
+function getExtensionResourcePath(
+  mediaFile: string,
+  webview: vscode.Webview,
+): string {
   let filePath = path.join('media', mediaFile);
   let absFilePath = Global.context.asAbsolutePath(filePath);
   let uri = vscode.Uri.file(absFilePath);
@@ -138,18 +146,32 @@ function getExtensionResourcePath(mediaFile: string, webview: vscode.Webview): s
 }
 
 function getResultsTables(results: QueryResults[]): string {
-  let html = '', first = true;
+  let html = '',
+    first = true;
   for (const result of results) {
-    if (!first)
-      html += '<hr class="result-divider" />'
+    if (!first) html += '<hr class="result-divider" />';
     switch (result.command) {
-      case 'ext-message': html += generateMessage(result); break;
-      case 'INSERT': html += generateInsertResults(result); break;
-      case 'UPDATE': html += generateUpdateResults(result); break;
-      case 'CREATE': html += generateCreateResults(result); break;
-      case 'DELETE': html += generateDeleteResults(result); break;
-      case 'EXPLAIN': html += generateExplainResult(result); break;
-      case 'SELECT': html += generateSelectResult(result); break;
+      case 'ext-message':
+        html += generateMessage(result);
+        break;
+      case 'INSERT':
+        html += generateInsertResults(result);
+        break;
+      case 'UPDATE':
+        html += generateUpdateResults(result);
+        break;
+      case 'CREATE':
+        html += generateCreateResults(result);
+        break;
+      case 'DELETE':
+        html += generateDeleteResults(result);
+        break;
+      case 'EXPLAIN':
+        html += generateExplainResult(result);
+        break;
+      case 'SELECT':
+        html += generateSelectResult(result);
+        break;
       default:
         html += generateGenericResult(result);
         break;
@@ -161,14 +183,24 @@ function getResultsTables(results: QueryResults[]): string {
 
 function generateInsertResults(result: QueryResults): string {
   let html = getRowCountResult(result.rowCount, 'inserted', 'insert');
-  if (result.fields && result.fields.length && result.rows && result.rows.length)
+  if (
+    result.fields &&
+    result.fields.length &&
+    result.rows &&
+    result.rows.length
+  )
     html += generateSelectTableResult(result);
   return html;
 }
 
 function generateUpdateResults(result: QueryResults): string {
   let html = getRowCountResult(result.rowCount, 'updated', 'update');
-  if (result.fields && result.fields.length && result.rows && result.rows.length)
+  if (
+    result.fields &&
+    result.fields.length &&
+    result.rows &&
+    result.rows.length
+  )
     html += generateSelectTableResult(result);
   return html;
 }
@@ -179,18 +211,27 @@ function generateCreateResults(result: QueryResults): string {
 
 function generateDeleteResults(result: QueryResults): string {
   let html = getRowCountResult(result.rowCount, 'deleted', 'delete');
-  if (result.fields && result.fields.length && result.rows && result.rows.length)
+  if (
+    result.fields &&
+    result.fields.length &&
+    result.rows &&
+    result.rows.length
+  )
     html += generateSelectTableResult(result);
   return html;
 }
 
-function getRowCountResult(rowCount: number, text: string, preClass: string): string {
+function getRowCountResult(
+  rowCount: number,
+  text: string,
+  preClass: string,
+): string {
   let rowOrRows = rowCount === 1 ? 'row' : 'rows';
   return `<pre class="vscode-postgres-result vscode-postgres-result-${preClass}">${rowCount} ${rowOrRows} ${text}</pre>`;
 }
 
 function generateExplainResult(result: QueryResults): string {
-  return `<pre class="vscode-postgres-result vscode-postgres-result-explain">${result.rows.join("\n")}</pre>`;
+  return `<pre class="vscode-postgres-result vscode-postgres-result-explain">${result.rows.join('\n')}</pre>`;
 }
 
 function generateGenericResult(result: QueryResults): string {
@@ -239,4 +280,3 @@ function base64Entities(str: string): string {
   let ret = atob(str);
   return ret;
 }
-

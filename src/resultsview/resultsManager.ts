@@ -10,7 +10,9 @@ export class ResultsManager implements vscode.WebviewPanelSerializer {
   private readonly _disposables: vscode.Disposable[] = [];
 
   public constructor() {
-    this._disposables.push(vscode.window.registerWebviewPanelSerializer(ResultView.viewType, this));
+    this._disposables.push(
+      vscode.window.registerWebviewPanelSerializer(ResultView.viewType, this),
+    );
   }
 
   public dispose(): void {
@@ -24,7 +26,11 @@ export class ResultsManager implements vscode.WebviewPanelSerializer {
     }
   }
 
-  public showResults(resource: vscode.Uri, viewColumn: vscode.ViewColumn, res: QueryResults[]): void {
+  public showResults(
+    resource: vscode.Uri,
+    viewColumn: vscode.ViewColumn,
+    res: QueryResults[],
+  ): void {
     let view = this.getExistingView(resource);
     if (view) {
       view.reveal(viewColumn);
@@ -39,18 +45,24 @@ export class ResultsManager implements vscode.WebviewPanelSerializer {
     return this._activeResults.currentResults;
   }
 
-  public async deserializeWebviewPanel(webview: vscode.WebviewPanel, state: any): Promise<void> {
+  public async deserializeWebviewPanel(
+    webview: vscode.WebviewPanel,
+    state: any,
+  ): Promise<void> {
     const view = await ResultView.revive(webview, state);
     this.registerView(view);
   }
 
   private getExistingView(resource: vscode.Uri): ResultView | undefined {
-    return this._results.find(view => {
+    return this._results.find((view) => {
       return view.matchesResource(resource);
     });
   }
 
-  private createNewView(resource: vscode.Uri, viewColumn: vscode.ViewColumn): ResultView {
+  private createNewView(
+    resource: vscode.Uri,
+    viewColumn: vscode.ViewColumn,
+  ): ResultView {
     const view = ResultView.create(resource, viewColumn);
 
     this._activeResults = view;
@@ -71,8 +83,16 @@ export class ResultsManager implements vscode.WebviewPanelSerializer {
     });
 
     view.onDidChangeViewState(({ webviewPanel }) => {
-      disposeAll(this._results.filter(otherView => view !== otherView && view!.matches(otherView)));
-      vscode.commands.executeCommand('setContext', ResultsManager.pgsqlResultContextKey, webviewPanel.visible && webviewPanel.active);
+      disposeAll(
+        this._results.filter(
+          (otherView) => view !== otherView && view!.matches(otherView),
+        ),
+      );
+      vscode.commands.executeCommand(
+        'setContext',
+        ResultsManager.pgsqlResultContextKey,
+        webviewPanel.visible && webviewPanel.active,
+      );
 
       this._activeResults = webviewPanel.active ? view : undefined;
     });

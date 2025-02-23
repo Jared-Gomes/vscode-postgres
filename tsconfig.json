@@ -3,16 +3,9 @@
     "module": "commonjs",
     "target": "es6",
     "outDir": "out",
-    "lib": [
-			"es6",
-			"es2015.promise",
-			"dom"
-		],
+    "lib": ["es6", "es2015.promise", "dom"],
     "sourceMap": true,
     "rootDir": "src"
   },
-  "exclude": [
-    "node_modules",
-    ".vscode-test"
-  ]
+  "exclude": ["node_modules", ".vscode-test"]
 }

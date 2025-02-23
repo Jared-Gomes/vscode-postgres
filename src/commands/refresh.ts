@@ -1,7 +1,7 @@
-import BaseCommand from "../common/baseCommand";
+import BaseCommand from '../common/baseCommand';
 import * as vscode from 'vscode';
-import { PostgreSQLTreeDataProvider } from "../tree/treeProvider";
-import { INode } from "../tree/INode";
+import { PostgreSQLTreeDataProvider } from '../tree/treeProvider';
+import { INode } from '../tree/INode';
 
 export class refreshCommand extends BaseCommand {
   async run(treeNode: INode) {

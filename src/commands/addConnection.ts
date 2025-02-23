@@ -1,45 +1,48 @@
-import BaseCommand from "../common/baseCommand";
+import BaseCommand from '../common/baseCommand';
 import * as vscode from 'vscode';
-import { PostgreSQLTreeDataProvider } from "../tree/treeProvider";
-import { IConnection } from "../common/IConnection";
-import { Constants } from "../common/constants";
+import { PostgreSQLTreeDataProvider } from '../tree/treeProvider';
+import { IConnection } from '../common/IConnection';
+import { Constants } from '../common/constants';
 import { v1 as uuidv1 } from 'uuid';
-import { Global } from "../common/global";
-import { MultiStepInput, InputFlowAction } from "../common/multiStepInput";
-import { Database } from "../common/database";
+import { Global } from '../common/global';
+import { MultiStepInput, InputFlowAction } from '../common/multiStepInput';
+import { Database } from '../common/database';
 import { PgClient } from '../common/connection';
 
-'use strict';
+('use strict');
 
 interface SSLQuickPickItem extends vscode.QuickPickItem {
-  ssl: boolean
+  ssl: boolean;
 }
 
 interface DatabaseQuickPickItem extends vscode.QuickPickItem {
-  dbname?: string
+  dbname?: string;
 }
 
 const sslOptions: SSLQuickPickItem[] = [
-  {label: 'Use Secure Connection', ssl: true},
-  {label: 'Standard Connection', ssl: false}
-]
+  { label: 'Use Secure Connection', ssl: true },
+  { label: 'Standard Connection', ssl: false },
+];
 
 export class addConnectionCommand extends BaseCommand {
-
   readonly TITLE: string = 'Add Database Connection';
   readonly TotalSteps: number = 7;
 
   async run() {
-    const state = {port: 5432} as Partial<ConnectionState>;
-    if (!(await MultiStepInput.run(input => this.setHostName(input, state)))) {
+    const state = { port: 5432 } as Partial<ConnectionState>;
+    if (
+      !(await MultiStepInput.run((input) => this.setHostName(input, state)))
+    ) {
       // command cancelled
       return;
     }
-    
+
     // create the db connection
     const tree = PostgreSQLTreeDataProvider.getInstance();
 
-    let connections = tree.context.globalState.get<{ [key: string]: IConnection }>(Constants.GlobalStateKey);
+    let connections = tree.context.globalState.get<{
+      [key: string]: IConnection;
+    }>(Constants.GlobalStateKey);
     if (!connections) connections = {};
 
     const id = uuidv1();
@@ -49,7 +52,7 @@ export class addConnectionCommand extends BaseCommand {
       user: state.user,
       port: state.port,
       ssl: state.secure,
-      database: state.database
+      database: state.database,
     };
 
     connections[id].hasPassword = !!state.password;
@@ -57,7 +60,10 @@ export class addConnectionCommand extends BaseCommand {
       await Global.context.secrets.store(id, state.password);
     }
 
-    await tree.context.globalState.update(Constants.GlobalStateKey, connections);
+    await tree.context.globalState.update(
+      Constants.GlobalStateKey,
+      connections,
+    );
     tree.refresh();
   }
 
@@ -69,8 +75,9 @@ export class addConnectionCommand extends BaseCommand {
       prompt: 'The hostname of the database',
       placeholder: 'ex. 127.0.0.1',
       ignoreFocusOut: true,
-      value: (typeof state.host === 'string') ? state.host : '',
-      validate: async (value) => (!value || !value.trim()) ? 'Hostname is required' : '' 
+      value: typeof state.host === 'string' ? state.host : '',
+      validate: async (value) =>
+        !value || !value.trim() ? 'Hostname is required' : '',
     });
     state.label = state.host;
     return (input: MultiStepInput) => this.setUsername(input, state);
@@ -84,8 +91,9 @@ export class addConnectionCommand extends BaseCommand {
       prompt: 'The PostgreSQL user to authenticate as',
       placeholder: 'ex. root',
       ignoreFocusOut: true,
-      value: (typeof state.user === 'string') ? state.user : '',
-      validate: async (value) => (!value || !value.trim()) ? 'Username is required' : ''
+      value: typeof state.user === 'string' ? state.user : '',
+      validate: async (value) =>
+        !value || !value.trim() ? 'Username is required' : '',
     });
     return (input: MultiStepInput) => this.setPassword(input, state);
   }
@@ -99,8 +107,8 @@ export class addConnectionCommand extends BaseCommand {
       placeholder: '',
       ignoreFocusOut: true,
       password: true,
-      value: (typeof state.password === 'string') ? state.password : '',
-      validate: async (value) => ''
+      value: typeof state.password === 'string' ? state.password : '',
+      validate: async (value) => '',
     });
     return (input: MultiStepInput) => this.setPort(input, state);
   }
@@ -113,18 +121,20 @@ export class addConnectionCommand extends BaseCommand {
       prompt: 'The port number to connect to',
       placeholder: 'ex. 5432',
       ignoreFocusOut: true,
-      value: (typeof state.port === 'number') ? state.port.toString() : '',
+      value: typeof state.port === 'number' ? state.port.toString() : '',
       validate: async (value) => {
         if (!value || !value.trim()) return 'Port number is required';
-        return Number.isNaN(Number.parseInt(value)) ? 'The port number specified was not a number': '';
+        return Number.isNaN(Number.parseInt(value))
+          ? 'The port number specified was not a number'
+          : '';
       },
-      convert: async (value) => Number.parseInt(value)
+      convert: async (value) => Number.parseInt(value),
     });
     return (input: MultiStepInput) => this.setSSL(input, state);
   }
 
   async setSSL(input: MultiStepInput, state: Partial<ConnectionState>) {
-    let active = sslOptions.find(s => s.ssl === !!state.secure);
+    let active = sslOptions.find((s) => s.ssl === !!state.secure);
     state.secure = await input.showQuickPick({
       title: this.TITLE,
       step: input.CurrentStepNumber,
@@ -133,10 +143,9 @@ export class addConnectionCommand extends BaseCommand {
       ignoreFocusOut: true,
       items: sslOptions,
       activeItem: active || undefined,
-      convert: async (value: SSLQuickPickItem) => value.ssl
+      convert: async (value: SSLQuickPickItem) => value.ssl,
     });
-    if (typeof state.secure === 'undefined')
-      state.secure = false;
+    if (typeof state.secure === 'undefined') state.secure = false;
     return (input: MultiStepInput) => this.setDatabase(input, state);
   }
 
@@ -147,17 +156,25 @@ export class addConnectionCommand extends BaseCommand {
     let databases: DatabaseQuickPickItem[] = [];
     let connectionError: any = null;
     try {
-      connection = await Database.createConnection({
-        label: '',
-        host: state.host,
-        user: state.user,
-        password: state.password,
-        port: state.port,
-        ssl: state.secure
-      }, 'postgres');
-      const res = await connection.query('SELECT datname FROM pg_database WHERE datistemplate = false;');
-      databases = res.rows.map<DatabaseQuickPickItem>(database => ({label: database.datname, dbname: database.datname}));
-    } catch(err) {
+      connection = await Database.createConnection(
+        {
+          label: '',
+          host: state.host,
+          user: state.user,
+          password: state.password,
+          port: state.port,
+          ssl: state.secure,
+        },
+        'postgres',
+      );
+      const res = await connection.query(
+        'SELECT datname FROM pg_database WHERE datistemplate = false;',
+      );
+      databases = res.rows.map<DatabaseQuickPickItem>((database) => ({
+        label: database.datname,
+        dbname: database.datname,
+      }));
+    } catch (err) {
       if (err.message === `permission denied for database "postgres"`) {
         // Heroku message anyway... probably varies
         // is there another common parameter could be checked?
@@ -179,25 +196,32 @@ export class addConnectionCommand extends BaseCommand {
           title: this.TITLE,
           step: input.CurrentStepNumber,
           totalSteps: this.TotalSteps,
-          prompt: '[Optional] The database to connect to. Leave empty to enumerate databases on the server',
+          prompt:
+            '[Optional] The database to connect to. Leave empty to enumerate databases on the server',
           placeholder: '',
           ignoreFocusOut: true,
-          value: (typeof state.database === 'string') ? state.database : '',
-          validate: async (value) => ''
+          value: typeof state.database === 'string' ? state.database : '',
+          validate: async (value) => '',
         });
 
         try {
-          let databaseToTry = state.database && state.database.trim() ? state.database : 'postgres';
-          connection = await Database.createConnection({
-            label: '',
-            host: state.host,
-            user: state.user,
-            password: state.password,
-            port: state.port,
-            ssl: state.secure
-          }, databaseToTry);
+          let databaseToTry =
+            state.database && state.database.trim()
+              ? state.database
+              : 'postgres';
+          connection = await Database.createConnection(
+            {
+              label: '',
+              host: state.host,
+              user: state.user,
+              password: state.password,
+              port: state.port,
+              ssl: state.secure,
+            },
+            databaseToTry,
+          );
           connectionOK = true;
-        } catch(err) {
+        } catch (err) {
           connectionError = err;
           vscode.window.showErrorMessage(err.message);
         } finally {
@@ -206,7 +230,7 @@ export class addConnectionCommand extends BaseCommand {
             connection = null;
           }
         }
-      } while(!connectionOK)
+      } while (!connectionOK);
       return (input: MultiStepInput) => this.setDisplayName(input, state);
     }
 
@@ -214,9 +238,9 @@ export class addConnectionCommand extends BaseCommand {
       input.redoLastStep();
     }
 
-    databases.unshift({label: 'Show All Databases'});
+    databases.unshift({ label: 'Show All Databases' });
 
-    let active = databases.find(d => d.dbname && d.dbname === state.database);
+    let active = databases.find((d) => d.dbname && d.dbname === state.database);
     let selected = await input.showQuickPick({
       title: this.TITLE,
       step: input.CurrentStepNumber,
@@ -225,7 +249,7 @@ export class addConnectionCommand extends BaseCommand {
       ignoreFocusOut: true,
       items: databases,
       activeItem: active || undefined,
-      convert: async (value: DatabaseQuickPickItem) => value.dbname
+      convert: async (value: DatabaseQuickPickItem) => value.dbname,
     });
     state.database = selected || '';
     return (input: MultiStepInput) => this.setDisplayName(input, state);
@@ -239,11 +263,10 @@ export class addConnectionCommand extends BaseCommand {
       prompt: 'The display name of the database connection',
       placeholder: 'ex. My Local DB (optional)',
       ignoreFocusOut: true,
-      value: (typeof state.label === 'string') ? state.label : '',
-      validate: async (value) => '' // empty error message (no error)
+      value: typeof state.label === 'string' ? state.label : '',
+      validate: async (value) => '', // empty error message (no error)
     });
   }
-
 }
 
 interface ConnectionState {
@@ -253,5 +276,5 @@ interface ConnectionState {
   password: string;
   port: number;
   database: string;
-  secure: boolean
+  secure: boolean;
 }

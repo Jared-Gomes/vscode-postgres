@@ -1,12 +1,11 @@
 export interface ISqlDetails {
-  statement: string,
-  line: number,
-  column: number,
-  readonly lines: string[]
-};
+  statement: string;
+  line: number;
+  column: number;
+  readonly lines: string[];
+}
 
 export class Validator {
-
   /**
    * We need to track the following:
    *  - Each Statement
@@ -14,19 +13,27 @@ export class Validator {
    *  - Starting Column
    */
 
-  public static* prepare_sql(sql: string): IterableIterator<ISqlDetails> {
+  public static *prepare_sql(sql: string): IterableIterator<ISqlDetails> {
     let lines = sql.split(/\r?\n/),
       startLine = 0,
       startColumn = 0,
       commandLines: string[] = [];
 
-    let in_statement = false, in_line_comment = false, in_block_comment = false,
-      in_identifier = false, in_quote = false, was_in_line_comment = false;
+    let in_statement = false,
+      in_line_comment = false,
+      in_block_comment = false,
+      in_identifier = false,
+      in_quote = false,
+      was_in_line_comment = false;
 
     for (let currentLine = 0; currentLine < lines.length; currentLine++) {
       for (let data of Validator.split_sql(lines[currentLine])) {
         if (!in_statement && !in_line_comment && !in_block_comment) {
-          if (data.first !== '--' && data.first !== '/*' && data.contents.trim().length > 0) {
+          if (
+            data.first !== '--' &&
+            data.first !== '/*' &&
+            data.contents.trim().length > 0
+          ) {
             startColumn = data.start;
             startLine = currentLine;
             in_statement = true;
@@ -34,22 +41,38 @@ export class Validator {
           }
         }
 
-        if (!in_line_comment && !in_block_comment && !in_identifier && !in_quote) {
+        if (
+          !in_line_comment &&
+          !in_block_comment &&
+          !in_identifier &&
+          !in_quote
+        ) {
           if (data.first === '--') in_line_comment = true;
           else if (data.first === '/*') in_block_comment = true;
           else if (data.first === '"') in_identifier = true;
           else if (data.first === "'") in_quote = true;
         }
 
-        commandLines.push((data.first ? data.first : '') + data.contents + (data.last ? data.last : ''))
+        commandLines.push(
+          (data.first ? data.first : '') +
+            data.contents +
+            (data.last ? data.last : ''),
+        );
 
-        if (!in_line_comment && !in_block_comment && !in_identifier && !in_quote && in_statement && data.last === ';') {
+        if (
+          !in_line_comment &&
+          !in_block_comment &&
+          !in_identifier &&
+          !in_quote &&
+          in_statement &&
+          data.last === ';'
+        ) {
           in_statement = false;
           yield {
-            statement: commandLines.join("\n"),
+            statement: commandLines.join('\n'),
             line: startLine,
             column: startColumn,
-            lines: commandLines
+            lines: commandLines,
           };
         }
 
@@ -66,26 +89,26 @@ export class Validator {
     }
     if (in_statement) {
       yield {
-        statement: commandLines.join("\n"),
+        statement: commandLines.join('\n'),
         line: startLine,
         column: startColumn,
-        lines: commandLines
+        lines: commandLines,
       };
     }
     //   let response = results.join("\n");
-  //   if (in_statement && !in_block_comment) {
-  //     if (in_line_comment)
-  //       response += "\n";
-  //     response += ';';
-  //   }
-  //   return response;
+    //   if (in_statement && !in_block_comment) {
+    //     if (in_line_comment)
+    //       response += "\n";
+    //     response += ';';
+    //   }
+    //   return response;
   }
 
   // public static preparer_sql(sql) {
   //   let in_statement = false,
   //       in_line_comment = false,
   //       in_block_comment = false;
-    
+
   //   let results: string[] = [];
   //   for (let data of Validator.split_sql(sql)) {
   //     let precontents = null, start_str = null;
@@ -110,7 +133,7 @@ export class Validator {
 
   //     if (!in_line_comment && !in_block_comment && in_statement && data.end === ';')
   //       in_statement = false;
-      
+
   //     if (in_block_comment && data.end === '*/')
   //       in_block_comment = false;
 
@@ -126,8 +149,8 @@ export class Validator {
   //   return response;
   // }
 
-  public static* split_sql(sql: string) {
-    let bookends = [";", '"', '""', "'", "''", "--", "/*", "*/"];
+  public static *split_sql(sql: string) {
+    let bookends = [';', '"', '""', "'", "''", '--', '/*', '*/'];
     let last_bookend_found = null;
     let start = 0;
 
@@ -139,7 +162,7 @@ export class Validator {
           last: null,
           contents: sql.substr(start),
           start,
-          end: start + sql.substr(start).length
+          end: start + sql.substr(start).length,
         };
         start = sql.length + 1; //? is this right?
       } else {
@@ -148,27 +171,32 @@ export class Validator {
           last: results.bookend,
           contents: sql.substring(start, results.end),
           start,
-          end: results.end
+          end: results.end,
         };
         start = results.end + results.bookend.length + 1;
-        last_bookend_found = (results.bookend !== ';') ? results.bookend : null;
+        last_bookend_found = results.bookend !== ';' ? results.bookend : null;
       }
     }
   }
 
-  private static get_next_occurence(haystack: string, offset: number, needles: string[]) {
+  private static get_next_occurence(
+    haystack: string,
+    offset: number,
+    needles: string[],
+  ) {
     let firstCharMap = {};
-    needles.forEach(n => { firstCharMap[n[0]] = n; });
+    needles.forEach((n) => {
+      firstCharMap[n[0]] = n;
+    });
     let firstChars = Object.keys(firstCharMap);
     while (haystack && offset < haystack.length) {
       if (firstChars.indexOf(haystack[offset]) >= 0) {
         let possible_needle = firstCharMap[haystack[offset]];
         if (haystack.substr(offset, possible_needle.length) === possible_needle)
-          return {end: offset, bookend: possible_needle};
+          return { end: offset, bookend: possible_needle };
       }
       offset++;
     }
     return null;
   }
-
 }

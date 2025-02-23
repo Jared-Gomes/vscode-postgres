@@ -5,27 +5,38 @@ import { Global } from '../common/global';
 import { IConnection } from '../common/IConnection';
 import { ConnectionNode } from './connectionNode';
 
-export class PostgreSQLTreeDataProvider implements vscode.TreeDataProvider<INode> {
-
-  public _onDidChangeTreeData: vscode.EventEmitter<INode> = new vscode.EventEmitter<INode>();
-  public readonly onDidChangeTreeData: vscode.Event<INode> = this._onDidChangeTreeData.event;
+export class PostgreSQLTreeDataProvider
+  implements vscode.TreeDataProvider<INode>
+{
+  public _onDidChangeTreeData: vscode.EventEmitter<INode> =
+    new vscode.EventEmitter<INode>();
+  public readonly onDidChangeTreeData: vscode.Event<INode> =
+    this._onDidChangeTreeData.event;
   private static _instance: PostgreSQLTreeDataProvider = null;
 
-  constructor(public context: vscode.ExtensionContext){ this.refresh(); }
+  constructor(public context: vscode.ExtensionContext) {
+    this.refresh();
+  }
 
-  public static getInstance(context?: vscode.ExtensionContext): PostgreSQLTreeDataProvider {
+  public static getInstance(
+    context?: vscode.ExtensionContext,
+  ): PostgreSQLTreeDataProvider {
     if (context && !this._instance) {
       this._instance = new PostgreSQLTreeDataProvider(context);
-      context.subscriptions.push(vscode.window.registerTreeDataProvider("postgres", this._instance));
+      context.subscriptions.push(
+        vscode.window.registerTreeDataProvider('postgres', this._instance),
+      );
     }
     return this._instance;
   }
-  
+
   public refresh(element?: INode): void {
     this._onDidChangeTreeData.fire(element);
   }
 
-  public getTreeItem(element: INode): Promise<vscode.TreeItem> | vscode.TreeItem {
+  public getTreeItem(
+    element: INode,
+  ): Promise<vscode.TreeItem> | vscode.TreeItem {
     return element.getTreeItem();
   }
 
@@ -37,12 +48,17 @@ export class PostgreSQLTreeDataProvider implements vscode.TreeDataProvider<INode
   }
 
   private async getConnectionNodes(): Promise<INode[]> {
-    const connections = this.context.globalState.get<{[key: string]: IConnection}>(Constants.GlobalStateKey);
+    const connections = this.context.globalState.get<{
+      [key: string]: IConnection;
+    }>(Constants.GlobalStateKey);
     const ConnectionNodes = [];
     if (connections) {
       for (const id of Object.keys(connections)) {
         let connection: IConnection = Object.assign({}, connections[id]);
-        if (connection.hasPassword || !connection.hasOwnProperty('hasPassword')) {
+        if (
+          connection.hasPassword ||
+          !connection.hasOwnProperty('hasPassword')
+        ) {
           connection.password = await Global.context.secrets.get(id);
         }
         ConnectionNodes.push(new ConnectionNode(id, connection));

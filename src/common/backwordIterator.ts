@@ -1,4 +1,4 @@
-import { TextDocument } from "vscode-languageserver";
+import { TextDocument } from 'vscode-languageserver';
 
 var _NL = '\n'.charCodeAt(0);
 var _TAB = '\t'.charCodeAt(0);
@@ -11,7 +11,7 @@ var _LParent = '('.charCodeAt(0);
 var _RParent = ')'.charCodeAt(0);
 var _Comma = ','.charCodeAt(0);
 var _Period = '.'.charCodeAt(0);
-var _Quote = '\''.charCodeAt(0);
+var _Quote = "'".charCodeAt(0);
 var _DQuote = '"'.charCodeAt(0);
 var _USC = '_'.charCodeAt(0);
 var _a = 'a'.charCodeAt(0);
@@ -28,7 +28,11 @@ export class BackwardIterator {
   private text: string;
   private lines: string[];
 
-  constructor(private model: TextDocument, private offset: number, private lineNumber: number) {
+  constructor(
+    private model: TextDocument,
+    private offset: number,
+    private lineNumber: number,
+  ) {
     this.text = model.getText();
     this.lines = this.text.split(/\r?\n/g);
     this.line = this.lines[lineNumber];
@@ -40,17 +44,17 @@ export class BackwardIterator {
 
   public isFowardDQuote(): boolean {
     if (!this.hasForward()) return false;
-    return (this.peekForward() === _DQuote);
+    return this.peekForward() === _DQuote;
   }
 
   public isNextDQuote(): boolean {
     if (!this.hasNext()) return false;
-    return (this.peekNext() === _DQuote);
+    return this.peekNext() === _DQuote;
   }
 
   public isNextPeriod(): boolean {
     if (!this.hasNext()) return false;
-    return (this.peekNext() === _Period);
+    return this.peekNext() === _Period;
   }
 
   public peekNext(): number {
@@ -64,13 +68,14 @@ export class BackwardIterator {
   }
 
   public hasForward(): boolean {
-    return (this.lineNumber < this.lines.length || this.offset < this.line.length);
+    return (
+      this.lineNumber < this.lines.length || this.offset < this.line.length
+    );
   }
 
   public peekForward(): number {
     if (this.offset === this.line.length) {
-      if (this.lineNumber === this.lines.length)
-        return BOF;
+      if (this.lineNumber === this.lines.length) return BOF;
       return _NL;
     }
     return this.line.charCodeAt(this.offset + 1);
@@ -106,11 +111,21 @@ export class BackwardIterator {
             return paramCount;
           }
           break;
-        case _RParent: parentNesting++; break;
-        case _LCurly: curlyNesting--; break;
-        case _RCurly: curlyNesting++; break;
-        case _LBracket: bracketNesting--; break;
-        case _RBracket: bracketNesting++; break;
+        case _RParent:
+          parentNesting++;
+          break;
+        case _LCurly:
+          curlyNesting--;
+          break;
+        case _RCurly:
+          curlyNesting++;
+          break;
+        case _LBracket:
+          bracketNesting--;
+          break;
+        case _RBracket:
+          bracketNesting++;
+          break;
         case _DQuote:
         case _Quote:
           while (this.hasNext() && ch !== this.next()) {
@@ -128,25 +143,24 @@ export class BackwardIterator {
   }
 
   public readIdent() {
-    let identStarted = false, isQuotedIdentifier = false;
+    let identStarted = false,
+      isQuotedIdentifier = false;
     let ident = '';
     while (this.hasNext()) {
       // Peek first and check if is part of identifier
       let ch = this.peekNext();
-      if (identStarted && !isQuotedIdentifier && !this.isIdentPart(ch))
-        break;
+      if (identStarted && !isQuotedIdentifier && !this.isIdentPart(ch)) break;
 
       ch = this.next();
       if (!identStarted && isQuotedIdentifier && ch === _DQuote) {
         identStarted = true;
         continue;
       }
-      if (!identStarted && (ch === _WSB || ch === _TAB || ch == _NL))
-        continue;
-      
+      if (!identStarted && (ch === _WSB || ch === _TAB || ch == _NL)) continue;
+
       if (!identStarted && (ch === _DQuote || this.isIdentPart(ch))) {
         identStarted = true;
-        isQuotedIdentifier = (ch === _DQuote);
+        isQuotedIdentifier = ch === _DQuote;
         ident = String.fromCharCode(ch) + ident;
       } else if (identStarted) {
         if (isQuotedIdentifier) {
@@ -169,9 +183,9 @@ export class BackwardIterator {
       if (!ident) {
         break;
       }
-    
-      idents.push(ident)
-  
+
+      idents.push(ident);
+
       if (!this.isNextPeriod()) {
         break;
       }
@@ -180,9 +194,11 @@ export class BackwardIterator {
   }
 
   private isIdentPart(ch: number): boolean {
-    return (ch === _USC || // _
-      ch >= _a && ch <= _z || // a-z
-      ch >= _A && ch <= _Z || // A-Z
-      ch >= _0 && ch <= _9); // 0-9
+    return (
+      ch === _USC || // _
+      (ch >= _a && ch <= _z) || // a-z
+      (ch >= _A && ch <= _Z) || // A-Z
+      (ch >= _0 && ch <= _9)
+    ); // 0-9
   }
 }

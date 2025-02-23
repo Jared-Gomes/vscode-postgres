@@ -6,21 +6,23 @@ export class SqlQueries {
   GetAllFunctions: string;
 
   public format(stringValue: string, ...formatParams: any[]): string {
-    return stringValue.replace(/{(\d+)}/g, (match: string, number: string): string => {
-      let num = parseInt(number);
-      if (typeof formatParams[num] === 'undefined') {
-        throw new Error(`Index ${number} not found in the argument list`);
-      }
-      if (formatParams[num] === null) return '';
-      return formatParams[num].toString();
-    });
+    return stringValue.replace(
+      /{(\d+)}/g,
+      (match: string, number: string): string => {
+        let num = parseInt(number);
+        if (typeof formatParams[num] === 'undefined') {
+          throw new Error(`Index ${number} not found in the argument list`);
+        }
+        if (formatParams[num] === null) return '';
+        return formatParams[num].toString();
+      },
+    );
   }
 }
 
 let queries = {
-  0: <SqlQueries> {
-    GetFunctions:
-      `SELECT n.nspname as "schema",
+  0: <SqlQueries>{
+    GetFunctions: `SELECT n.nspname as "schema",
         p.proname as "name",
         d.description,
         pg_catalog.pg_get_function_result(p.oid) as "result_type",
@@ -39,8 +41,7 @@ let queries = {
         AND has_schema_privilege(n.oid, 'USAGE') = true
         AND has_function_privilege(p.oid, 'execute') = true
       ORDER BY 1, 2, 4;`,
-    GetAllFunctions:
-      `SELECT n.nspname as "schema",
+    GetAllFunctions: `SELECT n.nspname as "schema",
         p.proname as "name",
         d.description,
         pg_catalog.pg_get_function_result(p.oid) as "result_type",
@@ -60,8 +61,7 @@ let queries = {
         AND has_schema_privilege(n.oid, 'USAGE') = true
         AND has_function_privilege(p.oid, 'execute') = true
       ORDER BY 1, 2, 4;`,
-    TableColumns: 
-      `SELECT
+    TableColumns: `SELECT
         a.attname as column_name,
         format_type(a.atttypid, a.atttypmod) as data_type,
         coalesce(primaryIndex.indisprimary, false) as primary_key,
@@ -103,11 +103,10 @@ let queries = {
         a.attnum > 0 AND
         NOT a.attisdropped AND
         has_column_privilege($1, a.attname, 'SELECT, INSERT, UPDATE, REFERENCES')
-      ORDER BY {0};`
+      ORDER BY {0};`,
   },
-  90400: <SqlQueries> {
-    TableColumns:
-      `SELECT
+  90400: <SqlQueries>{
+    TableColumns: `SELECT
         a.attname as column_name,
         format_type(a.atttypid, a.atttypmod) as data_type,
         coalesce(primaryIndex.indisprimary, false) as primary_key,
@@ -154,9 +153,9 @@ let queries = {
         a.attnum > 0 AND
         NOT a.attisdropped AND
         has_column_privilege($1, a.attname, 'SELECT, INSERT, UPDATE, REFERENCES')
-      ORDER BY {0};`
+      ORDER BY {0};`,
   },
-  110000: <SqlQueries> {
+  110000: <SqlQueries>{
     GetFunctions: `
       SELECT n.nspname as "schema",
         p.proname as "name",
@@ -197,21 +196,19 @@ let queries = {
         AND p.prorettype <> 'pg_catalog.trigger'::pg_catalog.regtype
         AND has_schema_privilege(n.oid, 'USAGE') = true
         AND has_function_privilege(p.oid, 'execute') = true
-      ORDER BY 1, 2, 4;`
-  }
-}
+      ORDER BY 1, 2, 4;`,
+  },
+};
 
 export class SqlQueryManager {
-
   static getVersionQueries(versionNumber: number): SqlQueries {
-    let versionKeys = Object.keys(queries).map(k => parseInt(k));
+    let versionKeys = Object.keys(queries).map((k) => parseInt(k));
     versionKeys.sort((a, b) => a - b);
 
     let queryResult = new SqlQueries();
     for (let version of versionKeys) {
-      if (version > versionNumber)
-        break;
-      
+      if (version > versionNumber) break;
+
       let queryKeys = Object.keys(queries[version]);
       for (let queryKey of queryKeys) {
         if (queries[version][queryKey]) {
@@ -221,5 +218,4 @@ export class SqlQueryManager {
     }
     return queryResult;
   }
-
 }

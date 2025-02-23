@@ -1,4 +1,14 @@
-import { QuickPickItem, window, Disposable, CancellationToken, QuickInputButton, QuickInput, ExtensionContext, QuickInputButtons, Uri } from 'vscode';
+import {
+  QuickPickItem,
+  window,
+  Disposable,
+  CancellationToken,
+  QuickInputButton,
+  QuickInput,
+  ExtensionContext,
+  QuickInputButtons,
+  Uri,
+} from 'vscode';
 
 export type InputStep = (input: MultiStepInput) => Thenable<InputStep | void>;
 
@@ -27,7 +37,8 @@ export interface InputBoxParameters extends MultiStepInputParameters {
   convert?: (value: string) => Promise<any>;
 }
 
-export interface QuickPickParameters<T extends QuickPickItem> extends MultiStepInputParameters {
+export interface QuickPickParameters<T extends QuickPickItem>
+  extends MultiStepInputParameters {
   matchOnDescription?: boolean;
   matchOnDetail?: boolean;
   canPickMany?: boolean;
@@ -37,16 +48,17 @@ export interface QuickPickParameters<T extends QuickPickItem> extends MultiStepI
 }
 
 export class MultiStepInput {
-
   private current?: QuickInput;
   private steps: InputStep[] = [];
-  
+
   static async run<T>(start: InputStep) {
     const input = new MultiStepInput();
     return input.stepThrough(start);
   }
 
-  get CurrentStepNumber() { return this.steps.length; }
+  get CurrentStepNumber() {
+    return this.steps.length;
+  }
 
   private async stepThrough<T>(start: InputStep): Promise<boolean> {
     let step: InputStep | void = start;
@@ -59,20 +71,16 @@ export class MultiStepInput {
       }
       try {
         step = await step(this);
-      }
-      catch(err) {
+      } catch (err) {
         if (err === InputFlowAction.Back) {
           this.steps.pop();
           step = this.steps.pop();
-        }
-        else if (err === InputFlowAction.Resume) {
+        } else if (err === InputFlowAction.Resume) {
           step = this.steps.pop();
-        }
-        else if (err === InputFlowAction.Cancel) {
+        } else if (err === InputFlowAction.Cancel) {
           step = undefined;
           inputCompleted = false;
-        }
-        else {
+        } else {
           throw err;
         }
       }
@@ -92,7 +100,20 @@ export class MultiStepInput {
     throw InputFlowAction.Back;
   }
 
-  async showInputBox<P extends InputBoxParameters>({title, step, totalSteps, value, prompt, placeholder, ignoreFocusOut, password, validate, convert, buttons, shouldResume}: P) {
+  async showInputBox<P extends InputBoxParameters>({
+    title,
+    step,
+    totalSteps,
+    value,
+    prompt,
+    placeholder,
+    ignoreFocusOut,
+    password,
+    validate,
+    convert,
+    buttons,
+    shouldResume,
+  }: P) {
     const disposables: Disposable[] = [];
     try {
       return await new Promise<any>((resolve, reject) => {
@@ -107,12 +128,12 @@ export class MultiStepInput {
         input.ignoreFocusOut = !!ignoreFocusOut;
         input.buttons = [
           ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
-          ...(buttons || [])
+          ...(buttons || []),
         ];
 
         let validating = validate('');
         disposables.push(
-          input.onDidTriggerButton(item => {
+          input.onDidTriggerButton((item) => {
             if (item === QuickInputButtons.Back) {
               reject(InputFlowAction.Back);
             } else {
@@ -125,7 +146,7 @@ export class MultiStepInput {
             input.busy = true;
             if (!(await validate(value))) {
               if (convert) {
-                resolve(await convert(value))
+                resolve(await convert(value));
               } else {
                 resolve(value);
               }
@@ -143,12 +164,15 @@ export class MultiStepInput {
           }),
           input.onDidHide(async () => {
             try {
-              reject(shouldResume && await shouldResume() ? InputFlowAction.Resume : InputFlowAction.Cancel);
-            }
-            catch(errorInShouldResume) {
+              reject(
+                shouldResume && (await shouldResume())
+                  ? InputFlowAction.Resume
+                  : InputFlowAction.Cancel,
+              );
+            } catch (errorInShouldResume) {
               reject(errorInShouldResume);
             }
-          })
+          }),
         );
 
         if (this.current) {
@@ -157,13 +181,29 @@ export class MultiStepInput {
         this.current = input;
         setTimeout(() => input.show(), 5);
       });
-    }
-    finally {
-      disposables.forEach(d => d.dispose());
+    } finally {
+      disposables.forEach((d) => d.dispose());
     }
   }
 
-  async showQuickPick<T extends QuickPickItem, P extends QuickPickParameters<T>>({title, step, totalSteps, items, activeItem, placeholder, ignoreFocusOut, matchOnDescription, matchOnDetail, canPickMany, convert, buttons, shouldResume}: P) {
+  async showQuickPick<
+    T extends QuickPickItem,
+    P extends QuickPickParameters<T>,
+  >({
+    title,
+    step,
+    totalSteps,
+    items,
+    activeItem,
+    placeholder,
+    ignoreFocusOut,
+    matchOnDescription,
+    matchOnDetail,
+    canPickMany,
+    convert,
+    buttons,
+    shouldResume,
+  }: P) {
     const disposables: Disposable[] = [];
     try {
       return await new Promise<any>((resolve, reject) => {
@@ -182,10 +222,10 @@ export class MultiStepInput {
         }
         input.buttons = [
           ...(this.steps.length > 1 ? [QuickInputButtons.Back] : []),
-					...(buttons || [])
+          ...(buttons || []),
         ];
         disposables.push(
-          input.onDidTriggerButton(item => {
+          input.onDidTriggerButton((item) => {
             if (item === QuickInputButtons.Back) {
               reject(InputFlowAction.Back);
             } else {
@@ -194,7 +234,9 @@ export class MultiStepInput {
           }),
           input.onDidAccept(async () => {
             if (!convert) convert = async (value: T) => value;
-            let convertedItems: any[] = await Promise.all(input.activeItems.map(v => convert(v)));
+            let convertedItems: any[] = await Promise.all(
+              input.activeItems.map((v) => convert(v)),
+            );
             if (canPickMany) {
               resolve(convertedItems);
             } else {
@@ -203,12 +245,15 @@ export class MultiStepInput {
           }),
           input.onDidHide(async () => {
             try {
-              reject(shouldResume && await shouldResume() ? InputFlowAction.Resume : InputFlowAction.Cancel);
-            }
-            catch(errorInShouldResume) {
+              reject(
+                shouldResume && (await shouldResume())
+                  ? InputFlowAction.Resume
+                  : InputFlowAction.Cancel,
+              );
+            } catch (errorInShouldResume) {
               reject(errorInShouldResume);
             }
-          })
+          }),
         );
 
         if (this.current) {
@@ -217,9 +262,8 @@ export class MultiStepInput {
         this.current = input;
         setTimeout(() => input.show(), 5);
       });
-    }
-    finally {
-      disposables.forEach(d => d.dispose());
+    } finally {
+      disposables.forEach((d) => d.dispose());
     }
   }
 }

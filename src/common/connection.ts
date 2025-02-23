@@ -4,14 +4,16 @@
 import { Client, ClientConfig, types } from 'pg';
 import { parse as parseArray } from 'postgres-array';
 function parseStringArray(value: string) {
-  if (!value) { return null; }
-  return parseArray(value, v => String(v));
+  if (!value) {
+    return null;
+  }
+  return parseArray(value, (v) => String(v));
 }
 
-types.setTypeParser(types.builtins.DATE, v => String(v));
-types.setTypeParser(types.builtins.TIME, v => String(v));
-types.setTypeParser(types.builtins.TIMESTAMP, v => String(v));
-types.setTypeParser(types.builtins.TIMESTAMPTZ, v => String(v));
+types.setTypeParser(types.builtins.DATE, (v) => String(v));
+types.setTypeParser(types.builtins.TIME, (v) => String(v));
+types.setTypeParser(types.builtins.TIMESTAMP, (v) => String(v));
+types.setTypeParser(types.builtins.TIMESTAMPTZ, (v) => String(v));
 // @ts-ignore timestamp[]
 types.setTypeParser(1115, parseStringArray);
 // @ts-ignore _date (probably date[])

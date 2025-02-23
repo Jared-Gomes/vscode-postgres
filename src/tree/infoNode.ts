@@ -13,9 +13,11 @@ export class InfoNode implements INode {
       contextValue: 'vscode-postgres.tree.error',
       iconPath: {
         light: path.join(__dirname, '../../resources/light/error.svg'),
-        dark: path.join(__dirname, '../../resources/dark/error.svg')
-      }
+        dark: path.join(__dirname, '../../resources/dark/error.svg'),
+      },
     };
   }
-  public getChildren(): INode[] { return []; }
+  public getChildren(): INode[] {
+    return [];
+  }
 }

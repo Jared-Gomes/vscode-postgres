@@ -13,16 +13,19 @@ import { ResultsManager } from './resultsview/resultsManager';
 import { IConnection } from './common/IConnection';
 import { Constants } from './common/constants';
 
-
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
 export async function activate(context: vscode.ExtensionContext) {
-  
   // Use the console to output diagnostic information (console.log) and errors (console.error)
   // This line of code will only be executed once when your extension is activated
-  console.log(`Congratulations, your extension "${context.extension.id}" is now active!`);
-  let languageClient: PostgreSQLLanguageClient = new PostgreSQLLanguageClient(context);
-  let treeProvider: PostgreSQLTreeDataProvider = PostgreSQLTreeDataProvider.getInstance(context);
+  console.log(
+    `Congratulations, your extension "${context.extension.id}" is now active!`,
+  );
+  let languageClient: PostgreSQLLanguageClient = new PostgreSQLLanguageClient(
+    context,
+  );
+  let treeProvider: PostgreSQLTreeDataProvider =
+    PostgreSQLTreeDataProvider.getInstance(context);
   Global.context = context;
   EditorState.getInstance(languageClient);
 
@@ -37,8 +40,7 @@ export async function activate(context: vscode.ExtensionContext) {
       let commandClass = require(`./commands/${baseName}`);
       new commandClass[className](context);
     }
-  }
-  catch (err) {
+  } catch (err) {
     console.error('Command loading error:', err);
   }
 
@@ -50,7 +52,11 @@ export async function activate(context: vscode.ExtensionContext) {
   });
 
   const configFS = new ConfigFS();
-  context.subscriptions.push(vscode.workspace.registerFileSystemProvider('postgres-config', configFS, {isCaseSensitive: true}));
+  context.subscriptions.push(
+    vscode.workspace.registerFileSystemProvider('postgres-config', configFS, {
+      isCaseSensitive: true,
+    }),
+  );
 
   // EditorState.connection = null;
   // if (vscode.window && vscode.window.activeTextEditor) {
@@ -61,5 +67,4 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() {
-}
+export function deactivate() {}

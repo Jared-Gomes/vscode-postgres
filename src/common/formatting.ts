@@ -1,7 +1,11 @@
 import { FieldInfo } from './database';
 import { Global } from './global';
 
-export function formatFieldValue(field: FieldInfo, value: any, raw: boolean): string {
+export function formatFieldValue(
+  field: FieldInfo,
+  value: any,
+  raw: boolean,
+): string {
   if (value === null) {
     if (raw) return value;
     return `<i>null</i>`;
@@ -11,20 +15,24 @@ export function formatFieldValue(field: FieldInfo, value: any, raw: boolean): st
   let canTruncate: boolean = false;
   switch (field.format) {
     case 'interval':
-      value = formatInterval(value); break;
+      value = formatInterval(value);
+      break;
     case 'json':
     case 'jsonb':
     case 'point':
     case 'circle':
       if (!raw) {
-        if (Global.Configuration.get<boolean>("prettyPrintJSONfields"))
+        if (Global.Configuration.get<boolean>('prettyPrintJSONfields'))
           value = JSON.stringify(value, null, 2);
-        else
-          value = JSON.stringify(value);
+        else value = JSON.stringify(value);
       }
       break;
-    case 'text': canTruncate = true; break;
-    case 'bytea': value = '\\x' + value.toString('hex').toUpperCase(); break;
+    case 'text':
+      canTruncate = true;
+      break;
+    case 'bytea':
+      value = '\\x' + value.toString('hex').toUpperCase();
+      break;
     default:
       if (!raw) {
         value = value.toString();
@@ -47,23 +55,32 @@ function htmlEntities(str: string): string {
   // for (let i = 0; i < str.length; i++) {
   //   console.log('  ', str[i], ' - ', str[i].charCodeAt(0));
   // }
-  return str ? str.replace(/[\u00A0-\u9999<>\&"']/gim, (i) => `&#${i.charCodeAt(0)};`) : undefined;
+  return str
+    ? str.replace(/[\u00A0-\u9999<>\&"']/gim, (i) => `&#${i.charCodeAt(0)};`)
+    : undefined;
 }
 
 // #region "Format Interval"
 function formatInterval(value): string {
-  let keys: string[] = ['years', 'months', 'days', 'hours', 'minutes', 'seconds', 'milliseconds'];
+  let keys: string[] = [
+    'years',
+    'months',
+    'days',
+    'hours',
+    'minutes',
+    'seconds',
+    'milliseconds',
+  ];
   let is_negative = false;
   for (let key of keys) {
-    if (!value.hasOwnProperty(key))
-      value[key] = 0;
+    if (!value.hasOwnProperty(key)) value[key] = 0;
     else if (value[key] < 0) {
       is_negative = true;
       value[key] = Math.abs(value[key]);
     }
   }
 
-  switch (Global.Configuration.get<string>("intervalFormat")) {
+  switch (Global.Configuration.get<string>('intervalFormat')) {
     case 'humanize':
       return formatIntervalHumanize(value, is_negative);
     case 'succinct':
@@ -80,14 +97,13 @@ function formatIntervalISO(value: any, is_negative: boolean): string {
   if (value.months) iso += value.months.toString() + 'M';
   if (value.days) iso += value.days.toString() + 'D';
 
-  if (iso === 'P' || (value.hours || value.minutes || value.seconds))
-    iso += 'T';
+  if (iso === 'P' || value.hours || value.minutes || value.seconds) iso += 'T';
 
   if (value.hours) iso += value.hours.toString() + 'H';
   if (value.minutes) iso += value.minutes.toString() + 'M';
 
   if (!value.hasOwnProperty('seconds')) value.seconds = 0;
-  if (value.milliseconds) value.seconds += (value.milliseconds / 1000);
+  if (value.milliseconds) value.seconds += value.milliseconds / 1000;
 
   if (value.seconds) iso += value.seconds.toString() + 'S';
   if (iso === 'PT') iso += '0S';
@@ -97,7 +113,7 @@ function formatIntervalISO(value: any, is_negative: boolean): string {
 function formatIntervalHumanize(value: any, is_negative: boolean): string {
   let values: string[] = [];
   if (!value.hasOwnProperty('seconds')) value.seconds = 0;
-  if (value.milliseconds) value.seconds += (value.milliseconds / 1000);
+  if (value.milliseconds) value.seconds += value.milliseconds / 1000;
 
   if (value.years) values.push(value.years.toString() + ' years');
   if (value.months) values.push(value.months.toString() + ' months');
@@ -112,7 +128,7 @@ function formatIntervalHumanize(value: any, is_negative: boolean): string {
 
 function formatIntervalSuccinct(value: any, is_negative: boolean): string {
   let values: string[] = [];
-  if (value.milliseconds) value.seconds += (value.milliseconds / 1000);
+  if (value.milliseconds) value.seconds += value.milliseconds / 1000;
 
   if (value.years) values.push(value.years.toString());
   if (values.length || value.months) values.push(value.months.toString());

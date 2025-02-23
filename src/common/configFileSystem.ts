@@ -27,11 +27,11 @@ export class ConfigFile implements vscode.FileStat {
 }
 
 export class ConfigFS implements vscode.FileSystemProvider {
-  
   private _emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
   private _bufferedEvents: vscode.FileChangeEvent[] = [];
   private _fireSoonHandle: NodeJS.Timer;
-  readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this._emitter.event;
+  readonly onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> =
+    this._emitter.event;
 
   private _fireSoon(...events: vscode.FileChangeEvent[]): void {
     clearTimeout(this._fireSoonHandle);
@@ -57,14 +57,20 @@ export class ConfigFS implements vscode.FileSystemProvider {
   }
 
   createDirectory(uri: vscode.Uri): void {
-    throw vscode.FileSystemError.NoPermissions('Unable to create pg-config directories');
+    throw vscode.FileSystemError.NoPermissions(
+      'Unable to create pg-config directories',
+    );
   }
 
   readFile(uri: vscode.Uri): Promise<Uint8Array> {
-    return this._lookup(uri, false).then(value => value.data);
+    return this._lookup(uri, false).then((value) => value.data);
   }
 
-  async writeFile(uri: vscode.Uri, content: Uint8Array, options: {create: boolean, overwrite: boolean}): Promise<void> {
+  async writeFile(
+    uri: vscode.Uri,
+    content: Uint8Array,
+    options: { create: boolean; overwrite: boolean },
+  ): Promise<void> {
     let connFile = uri.path.substr(1);
     let fileExt = path.posix.extname(connFile);
     if (fileExt !== '.json') {
@@ -72,19 +78,23 @@ export class ConfigFS implements vscode.FileSystemProvider {
     }
     let connectionKey = path.posix.basename(connFile, fileExt);
 
-    const connections = Global.context.globalState.get<{[key: string]: IConnection}>(Constants.GlobalStateKey);
+    const connections = Global.context.globalState.get<{
+      [key: string]: IConnection;
+    }>(Constants.GlobalStateKey);
     if (!connections || !connections.hasOwnProperty(connectionKey))
       throw vscode.FileSystemError.FileNotFound(uri);
-    
-    
+
     let newDetails = JSON.parse(content.toString());
 
-    if (!newDetails.host) throw vscode.FileSystemError.NoPermissions(`Missing "host" key`);
-    if (!newDetails.user) throw vscode.FileSystemError.NoPermissions(`Missing "user" key`);
-    if (!newDetails.port) throw vscode.FileSystemError.NoPermissions(`Missing "port" key`);
+    if (!newDetails.host)
+      throw vscode.FileSystemError.NoPermissions(`Missing "host" key`);
+    if (!newDetails.user)
+      throw vscode.FileSystemError.NoPermissions(`Missing "user" key`);
+    if (!newDetails.port)
+      throw vscode.FileSystemError.NoPermissions(`Missing "port" key`);
     if (!newDetails.hasOwnProperty('password'))
       throw vscode.FileSystemError.NoPermissions(`Missing "password" key`);
-        
+
     let pwd = newDetails.password;
     delete newDetails.password;
     let connection: IConnection = Object.assign({}, newDetails);
@@ -96,17 +106,28 @@ export class ConfigFS implements vscode.FileSystemProvider {
     if (connection.hasPassword) {
       await Global.context.secrets.store(connectionKey, pwd);
     }
-    await Global.context.globalState.update(Constants.GlobalStateKey, connections)
+    await Global.context.globalState.update(
+      Constants.GlobalStateKey,
+      connections,
+    );
     tree.refresh();
-    this._fireSoon({type: vscode.FileChangeType.Changed, uri});
+    this._fireSoon({ type: vscode.FileChangeType.Changed, uri });
   }
 
   delete(uri: vscode.Uri): void {
-    throw vscode.FileSystemError.NoPermissions('Unable to delete pg-config entries');
+    throw vscode.FileSystemError.NoPermissions(
+      'Unable to delete pg-config entries',
+    );
   }
 
-  rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: {overwrite: boolean}): void {
-    throw vscode.FileSystemError.NoPermissions('Unable to rename pg-config entries');
+  rename(
+    oldUri: vscode.Uri,
+    newUri: vscode.Uri,
+    options: { overwrite: boolean },
+  ): void {
+    throw vscode.FileSystemError.NoPermissions(
+      'Unable to rename pg-config entries',
+    );
   }
 
   private async _lookup(uri: vscode.Uri, silent: boolean): Promise<ConfigFile> {
@@ -118,22 +139,26 @@ export class ConfigFS implements vscode.FileSystemProvider {
     }
     let connectionKey = path.posix.basename(connFile, fileExt);
     let configFile: ConfigFile = null;
-    const connections = Global.context.globalState.get<{[key: string]: IConnection}>(Constants.GlobalStateKey);
+    const connections = Global.context.globalState.get<{
+      [key: string]: IConnection;
+    }>(Constants.GlobalStateKey);
     if (connections && connections.hasOwnProperty(connectionKey)) {
       // create the file
-      let connection: IConnection = Object.assign({}, connections[connectionKey]);
+      let connection: IConnection = Object.assign(
+        {},
+        connections[connectionKey],
+      );
       if (connection.hasPassword || !connection.hasOwnProperty('hasPassword')) {
         connection.password = await Global.context.secrets.get(connectionKey);
       } else {
-        connection.password = "";
+        connection.password = '';
       }
       delete connection.hasPassword;
       let connString = JSON.stringify(connection, null, 2);
       configFile = new ConfigFile(connection.label || connection.host);
       configFile.data = Buffer.from(connString);
     }
-    if (!configFile && !silent)
-      throw vscode.FileSystemError.FileNotFound(uri);
+    if (!configFile && !silent) throw vscode.FileSystemError.FileNotFound(uri);
     return configFile;
   }
 }

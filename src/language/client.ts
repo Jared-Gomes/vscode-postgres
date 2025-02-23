@@ -1,14 +1,14 @@
-import * as path from "path";
-import * as vscode from "vscode";
+import * as path from 'path';
+import * as vscode from 'vscode';
 import {
   LanguageClient,
   ServerOptions,
   TransportKind,
   LanguageClientOptions,
-} from "vscode-languageclient/node";
-import { ExtensionContext, workspace } from "vscode";
-import { IConnection } from "../common/IConnection";
-import { EditorState } from "../common/editorState";
+} from 'vscode-languageclient/node';
+import { ExtensionContext, workspace } from 'vscode';
+import { IConnection } from '../common/IConnection';
+import { EditorState } from '../common/editorState';
 
 export default class PostgreSQLLanguageClient {
   public client: LanguageClient;
@@ -17,9 +17,9 @@ export default class PostgreSQLLanguageClient {
   constructor(context: ExtensionContext) {
     this.lang_server_ready = false;
     let serverModule = context.asAbsolutePath(
-      path.join("out", "language", "server.js")
+      path.join('out', 'language', 'server.js'),
     );
-    let debugOptions = { execArgv: ["--nolazy", "--inspect=6005"] };
+    let debugOptions = { execArgv: ['--nolazy', '--inspect=6005'] };
 
     let serverOptions: ServerOptions = {
       run: { module: serverModule, transport: TransportKind.ipc },
@@ -32,18 +32,18 @@ export default class PostgreSQLLanguageClient {
 
     let clientOptions: LanguageClientOptions = {
       documentSelector: [
-        { language: "postgres", scheme: "file" },
-        { language: "postgres", scheme: "untitled" },
-        { language: "typescript", scheme: "file" },
-        { language: "typescript", scheme: "untitled" },
+        { language: 'postgres', scheme: 'file' },
+        { language: 'postgres', scheme: 'untitled' },
+        { language: 'typescript', scheme: 'file' },
+        { language: 'typescript', scheme: 'untitled' },
       ],
     };
 
     this.client = new LanguageClient(
-      "postgres",
-      "PostgreSQL Service",
+      'postgres',
+      'PostgreSQL Service',
       serverOptions,
-      clientOptions
+      clientOptions,
     );
     this.client.onReady().then(async () => {
       this.lang_server_ready = true;
@@ -66,7 +66,7 @@ export default class PostgreSQLLanguageClient {
 
   private doSetConnection(connection: IConnection) {
     this.client
-      .sendRequest("set_connection", {
+      .sendRequest('set_connection', {
         connection,
         documentUri: vscode.window.activeTextEditor.document.uri.toString(),
       })
@@ -74,7 +74,7 @@ export default class PostgreSQLLanguageClient {
         () => {},
         (reason: any) => {
           console.error(reason);
-        }
+        },
       );
   }
 }
